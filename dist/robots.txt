@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://best-scannerapp.vercel.app/sitemap.xml
