@@ -8,9 +8,9 @@ export const PLANS = [
   },
   {
     id: "day",
-    name: "1 Day Pass",
-    amount: 15,
-    description: "Text and signature editing without watermark for one day",
+    name: "3 Day Pass",
+    amount: 10,
+    description: "Text and signature editing without watermark for three days",
     features: ["Text tools", "Signature tools", "No watermark", "Combine files"]
   },
   {

@@ -686,7 +686,7 @@ function ScannerPage() {
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <PlanBadge access={access} />
             {!access ? (
               <button
@@ -738,7 +738,7 @@ function ScannerPage() {
               ) : null}
               {access ? (
                 <div className="mt-3 inline-flex items-center rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">
-                  Unlocked Paid Version For These Days
+                  Unlocked Paid Version
                 </div>
               ) : null}
             </div>

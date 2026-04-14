@@ -6,22 +6,22 @@ export function PaywallModal({ open, onClose, onChoosePlan, reason }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-950/80 p-4 backdrop-blur">
-      <div className="w-full max-w-5xl rounded-[2rem] border border-white/10 bg-slate-950 p-6">
+    <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-slate-950/80 p-3 backdrop-blur sm:items-center sm:p-4">
+      <div className="w-full max-w-5xl max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-[2rem] border border-white/10 bg-slate-950 shadow-2xl shadow-black/40">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="p-6 pb-0">
             <div className="text-xs uppercase tracking-[0.3em] text-accent">Unlock access</div>
             <h2 className="mt-2 font-display text-4xl text-white">Choose your pass</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
               {reason || "Your one free lifetime scan has already been used on this device."}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full bg-white/10 px-4 py-2 text-sm text-white">
+          <button type="button" onClick={onClose} className="m-6 rounded-full bg-white/10 px-4 py-2 text-sm text-white">
             Back
           </button>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 p-6 pt-4 sm:grid-cols-2 xl:grid-cols-5">
           {PLANS.map((plan) => (
             <div
               key={plan.id}
