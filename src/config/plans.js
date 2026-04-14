@@ -15,23 +15,23 @@ export const PLANS = [
   },
   {
     id: "fiveDay",
-    name: "5 Day Pass",
-    amount: 40,
-    description: "Editing tools and clean export for five days",
+    name: "7 Day Pass",
+    amount: 20,
+    description: "Editing tools and clean export for seven days",
     features: ["Text tools", "Signature tools", "No watermark", "Combine files"]
   },
   {
     id: "weekly",
-    name: "Weekly Pass",
+    name: "1 Month Pass",
     amount: 79,
-    description: "Full editing toolkit for seven days",
+    description: "Full editing toolkit for one month",
     features: ["Text tools", "Signature tools", "No watermark", "Combine files"]
   },
   {
     id: "monthly",
-    name: "Monthly Pass",
+    name: "3 Month Pass",
     amount: 199,
-    description: "Best for regular document editing work",
+    description: "Best for regular document editing work for three months",
     features: ["Text tools", "Signature tools", "No watermark", "Combine files"]
   }
 ];
