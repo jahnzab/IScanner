@@ -244,7 +244,75 @@ function formatPlanName(planId) {
 
 function HomePage() {
   const navigate = useNavigate();
-  const [selectedTool, setSelectedTool] = useState(TOOL_CARDS[0]);
+  const uploadSectionRef = useRef(null);
+  const [selectedTool, setSelectedTool] = useState(TOOL_CARDS.find((tool) => tool.id === "imageToPdf") || TOOL_CARDS[0]);
+  const selectedCopy = useMemo(() => getToolCopy(selectedTool.id), [selectedTool.id]);
+  const [homeFiles, setHomeFiles] = useState([]);
+  const [homePreview, setHomePreview] = useState("");
+  const [config, setConfig] = useState({ upiId: "", upiName: "" });
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paymentPlan, setPaymentPlan] = useState(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState("");
+
+  useEffect(() => {
+    api.getPublicConfig().then(setConfig).catch(() => {});
+  }, []);
+
+  const handleHomeFiles = async (files) => {
+    const list = Array.from(files || []);
+    if (!list.length) {
+      return;
+    }
+
+    setHomeFiles(list);
+    setPaymentStatus("");
+
+    const firstImage = list.find((file) => file.type.startsWith("image/"));
+    if (firstImage) {
+      const preview = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error(`Failed to read ${firstImage.name}`));
+        reader.readAsDataURL(firstImage);
+      });
+      setHomePreview(preview);
+    } else {
+      setHomePreview("");
+    }
+  };
+
+  const handleChoosePlan = (plan) => {
+    setPaymentPlan(plan);
+    setPaymentStatus("");
+    setPaymentOpen(true);
+  };
+
+  const handlePaymentSubmit = async ({ email, utr }) => {
+    if (!email || !utr || !paymentPlan) {
+      setPaymentStatus("Email and UTR are required.");
+      return;
+    }
+
+    setPaymentLoading(true);
+    setPaymentStatus("");
+    try {
+      const response = await api.initiatePayment({
+        email,
+        utr,
+        plan: paymentPlan.id
+      });
+      setPaymentStatus(response.message || "Payment saved. Waiting for admin approval.");
+      setPaymentOpen(false);
+      setPaywallOpen(false);
+      navigate("/recover", { state: { email: String(email).trim() } });
+    } catch (error) {
+      setPaymentStatus(error.message);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -262,11 +330,17 @@ function HomePage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => {
-                const freeSection = document.getElementById("home-upload-section");
-                freeSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
+              onClick={() => setPaywallOpen(true)}
               className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-100"
+            >
+              Subscription Plans
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white"
             >
               Free plan included
             </button>
@@ -293,7 +367,7 @@ function HomePage() {
               <div className="text-xs uppercase tracking-[0.3em] text-accent">Tools</div>
               <h2 className="mt-2 text-3xl font-semibold text-white">Choose a box to open that workflow</h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                Tap a tool card to jump down to its matching upload section. Use the full editor if you want
+                Tap a tool card to swap the upload section below. The full editor is still available if you want
                 the complete scanner experience.
               </p>
             </div>
@@ -307,7 +381,7 @@ function HomePage() {
                 onClick={() => {
                   setSelectedTool(tool);
                   window.setTimeout(() => {
-                    document.getElementById("home-upload-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }, 30);
                 }}
                 className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20"
@@ -321,12 +395,12 @@ function HomePage() {
             ))}
           </div>
 
-          <div id="home-upload-section" className="mt-6 rounded-[2rem] border border-white/10 bg-white/6 p-6 shadow-glow scroll-mt-24">
+          <div ref={uploadSectionRef} id="home-upload-section" className="mt-6 rounded-[2rem] border border-white/10 bg-white/6 p-6 shadow-glow scroll-mt-24">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div className="text-xs uppercase tracking-[0.3em] text-accent">Upload section</div>
-                <h3 className="mt-2 text-3xl font-semibold text-white">{selectedTool.uploadTitle}</h3>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{selectedTool.uploadDescription}</p>
+                <h3 className="mt-2 text-3xl font-semibold text-white">{selectedCopy.uploadTitle}</h3>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{selectedCopy.uploadDescription}</p>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
                   <span className="rounded-full border border-white/10 bg-black/20 px-3 py-2">Free plan: 1 scan per device</span>
                   <span className="rounded-full border border-white/10 bg-black/20 px-3 py-2">Paid plans: OCR + clean export</span>
@@ -336,7 +410,56 @@ function HomePage() {
                 <div className="text-slate-400">Selected tool</div>
                 <div className="mt-1 text-sm text-white">{selectedTool.title}</div>
                 <div className="mt-2 normal-case tracking-normal text-slate-400">
-                  Click below to open the full editor, or stay here for the quick jump.
+                  Click below to switch upload types without leaving this page.
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <ImageUpload
+                onSelectFiles={handleHomeFiles}
+                loading={false}
+                hasPages={homeFiles.length > 0}
+                mode={selectedTool.mode}
+                titleOverride={selectedCopy.uploadTitle}
+                descriptionOverride={selectedCopy.uploadDescription}
+                primaryLabelOverride={selectedCopy.primaryLabel}
+                multiLabelOverride={selectedTool.id === "pdfToWord" ? "Convert PDF pages" : ""}
+                showCameraOverride={selectedTool.mode === "imageToPdf"}
+              />
+            </div>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr,0.8fr]">
+              <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
+                <div className="text-sm font-semibold text-white">Selected files</div>
+                <div className="mt-2 text-xs text-slate-300">
+                  Upload images or PDFs here and the section below will update to match the chosen tool.
+                </div>
+                <div className="mt-4 space-y-3">
+                  {homeFiles.length ? homeFiles.map((file) => (
+                    <div key={`${file.name}-${file.size}`} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                      {file.name}
+                    </div>
+                  )) : (
+                    <div className="rounded-2xl border border-dashed border-white/10 px-4 py-8 text-center text-sm text-slate-400">
+                      No files selected yet. Click the upload button above.
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
+                <div className="text-sm font-semibold text-white">Preview</div>
+                <div className="mt-2 text-xs text-slate-300">
+                  This is the quick home preview. Open the full editor only if you need crop, annotation, OCR, or export tools.
+                </div>
+                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-white/10 bg-black/30">
+                  {homePreview ? (
+                    <img src={homePreview} alt="Selected preview" className="h-72 w-full object-contain" />
+                  ) : (
+                    <div className="grid h-72 place-items-center px-4 text-center text-sm text-slate-400">
+                      Image preview appears here when you upload a photo.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -367,6 +490,22 @@ function HomePage() {
           </div>
         </section>
       </div>
+
+      <PaywallModal
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        onChoosePlan={handleChoosePlan}
+        reason="Choose a pass to unlock OCR, clean export, and additional scanner tools."
+      />
+      <PaymentModal
+        open={paymentOpen}
+        plan={paymentPlan}
+        config={config}
+        onClose={() => setPaymentOpen(false)}
+        onSubmit={handlePaymentSubmit}
+        loading={paymentLoading}
+        status={paymentStatus}
+      />
     </div>
   );
 }
