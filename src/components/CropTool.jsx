@@ -93,18 +93,21 @@ export function CropTool({ preview, corners, onChange, onInitialize }) {
         <div className="mt-3 flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={onInitialize}
+            onClick={() => onChange(DEFAULT_CORNERS)}
             className="rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-white"
           >
-            Start manual crop
+            Auto crop
           </button>
           <button
             type="button"
-            onClick={() => onChange(DEFAULT_CORNERS)}
+            onClick={onInitialize}
             className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white"
           >
-            Use default page box
+            Manual crop
           </button>
+        </div>
+        <div className="mt-2 text-xs text-slate-400">
+          Auto crop trims a little from every side. Manual crop lets you drag the corners to fine-tune the edges.
         </div>
       </div>
     );
@@ -119,7 +122,7 @@ export function CropTool({ preview, corners, onChange, onInitialize }) {
       <div className="mb-3 flex items-center justify-between gap-4">
         <div>
           <div className="text-sm font-semibold text-white">Manual crop tool</div>
-          <div className="text-xs text-slate-300">Drag the handles to tighten the document boundary.</div>
+          <div className="text-xs text-slate-300">Drag the handles to tighten the document boundary. Auto crop trims a little from every side.</div>
         </div>
       </div>
       <div className="relative overflow-hidden rounded-[1.25rem]">

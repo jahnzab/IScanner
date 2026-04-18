@@ -111,17 +111,23 @@ export async function buildCanvasFromImage({
     if (item.type === "text") {
       ctx.fillStyle = item.color || "#ffffff";
       ctx.font = `${item.fontSize || 32}px ${item.fontFamily || "sans-serif"}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillText(item.value, item.x * canvas.width, item.y * canvas.height);
     }
 
     if (item.type === "signature" && item.image) {
       const sigImage = await loadImage(item.image);
+      const width = (item.width || 0.25) * canvas.width;
+      const height = (item.height || 0.12) * canvas.height;
+      const x = item.x * canvas.width - width / 2;
+      const y = item.y * canvas.height - height / 2;
       ctx.drawImage(
         sigImage,
-        item.x * canvas.width,
-        item.y * canvas.height,
-        (item.width || 0.25) * canvas.width,
-        (item.height || 0.12) * canvas.height
+        x,
+        y,
+        width,
+        height
       );
     }
   }

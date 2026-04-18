@@ -43,8 +43,10 @@ export function SignatureTool({ onAdd }) {
   const [strokes, setStrokes] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const activeStrokeRef = useRef([]);
+  const strokesRef = useRef([]);
 
   useEffect(() => {
+    strokesRef.current = strokes;
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
@@ -66,15 +68,24 @@ export function SignatureTool({ onAdd }) {
     activeStrokeRef.current = [getPoint(event)];
   };
 
+  const redrawCanvas = (draftStroke = null) => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    const ctx = canvas.getContext("2d");
+    const nextStrokes = draftStroke ? [...strokesRef.current, draftStroke] : strokesRef.current;
+    drawSignature(ctx, nextStrokes, color);
+  };
+
   const draw = (event) => {
     if (!isDrawing || !canvasRef.current) {
       return;
     }
 
     activeStrokeRef.current = [...activeStrokeRef.current, getPoint(event)];
-
-    const ctx = canvasRef.current.getContext("2d");
-    drawSignature(ctx, [...strokes, activeStrokeRef.current], color);
+    redrawCanvas(activeStrokeRef.current);
   };
 
   const stopDraw = () => {
@@ -83,9 +94,9 @@ export function SignatureTool({ onAdd }) {
     }
 
     setIsDrawing(false);
-
     if (activeStrokeRef.current.length > 1) {
-      setStrokes((current) => [...current, activeStrokeRef.current]);
+      const committedStroke = [...activeStrokeRef.current];
+      setStrokes((current) => [...current, committedStroke]);
     }
 
     activeStrokeRef.current = [];
@@ -113,6 +124,7 @@ export function SignatureTool({ onAdd }) {
           onPointerMove={draw}
           onPointerUp={stopDraw}
           onPointerCancel={stopDraw}
+          onPointerLeave={stopDraw}
           className="w-full rounded-2xl border border-white/10 bg-black/30"
           style={{ touchAction: "none" }}
         />

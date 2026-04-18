@@ -53,6 +53,14 @@ const TOOL_CARDS = [
     cta: "Open image editor"
   },
   {
+    id: "cropImage",
+    title: "Crop Image",
+    subtitle: "Quick crop with movable edges before export.",
+    mode: "imageToPdf",
+    accent: "from-lime-400/45 to-emerald-400/20",
+    cta: "Crop image"
+  },
+  {
     id: "textPdf",
     title: "Add Text PDF",
     subtitle: "Place labels, notes, or timestamps on a PDF page.",
@@ -123,6 +131,10 @@ const TEXT_TOOL_IDS = new Set(["textPdf", "textImage"]);
 const SIGNATURE_TOOL_IDS = new Set(["signaturePdf", "signatureImage"]);
 
 function getToolAnchor(toolId) {
+  if (toolId === "cropImage") {
+    return "crop-tool-panel";
+  }
+
   if (TEXT_TOOL_IDS.has(toolId)) {
     return "text-tool-panel";
   }
@@ -160,6 +172,14 @@ function getToolCopy(toolId) {
         subtitle: "Mark up images with text, signatures, and crop control.",
         uploadTitle: "Edit Image",
         uploadDescription: "Upload an image, then crop, annotate, and export it.",
+        primaryLabel: "Open image"
+      };
+    case "cropImage":
+      return {
+        title: "Crop Image",
+        subtitle: "Quick crop with movable edges before export.",
+        uploadTitle: "Crop Image",
+        uploadDescription: "Upload an image, then use quick crop or manual corner controls.",
         primaryLabel: "Open image"
       };
     case "textPdf":
@@ -518,24 +538,7 @@ function HomePage() {
               />
             </div>
 
-            <div className="mt-5 grid gap-4 lg:grid-cols-[0.78fr,1.22fr]">
-              <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-3">
-                <div className="text-sm font-semibold text-white">Selected files</div>
-                <div className="mt-2 text-xs text-slate-300">
-                  Upload images or PDFs here and the section below will update to match the chosen tool.
-                </div>
-                <div className="mt-3 max-h-56 space-y-2 overflow-auto pr-1">
-                  {homeFiles.length ? homeFiles.map((file) => (
-                    <div key={`${file.name}-${file.size}`} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200">
-                      {file.name}
-                    </div>
-                  )) : (
-                    <div className="rounded-2xl border border-dashed border-white/10 px-3 py-6 text-center text-sm text-slate-400">
-                      No files selected yet. Click the upload button above.
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="mt-5">
               <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
                 <div className="text-sm font-semibold text-white">Preview</div>
                 <div className="mt-2 text-xs text-slate-300">
