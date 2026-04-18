@@ -498,12 +498,6 @@ function HomePage() {
                   key={tool.id}
                   type="button"
                   onClick={() => {
-                    if (TEXT_TOOL_IDS.has(tool.id) || SIGNATURE_TOOL_IDS.has(tool.id)) {
-                      setPaywallReason("Text and signature tools require a subscription before you can edit or download them.");
-                      setPaywallOpen(true);
-                      return;
-                    }
-
                     setSelectedTool(tool);
                     window.setTimeout(() => {
                       const target = tool.id === "cropImage" ? homeCropSectionRef.current : uploadSectionRef.current;
@@ -1884,11 +1878,6 @@ function ScannerPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!canUseEditingTools) {
-                      requirePaid("Unlock paid subscription to add and edit text inside the image or PDF.");
-                      return;
-                    }
-
                     document.getElementById("text-tool-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                   className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white"
@@ -1913,11 +1902,6 @@ function ScannerPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!canUseEditingTools) {
-                      requirePaid("Unlock paid subscription to add and edit signatures inside the image or PDF.");
-                      return;
-                    }
-
                     document.getElementById("signature-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                   className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white"
