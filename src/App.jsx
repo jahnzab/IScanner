@@ -289,7 +289,6 @@ function HomePage() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
   const exportProfile = useMemo(() => getHomeExportProfile(selectedTool.id), [selectedTool.id]);
-  const homeNeedsSubscription = TEXT_TOOL_IDS.has(selectedTool.id) || SIGNATURE_TOOL_IDS.has(selectedTool.id);
 
   useEffect(() => {
     api.getPublicConfig().then(setConfig).catch(() => {});
@@ -441,7 +440,7 @@ function HomePage() {
               All your PDF and document tools in one clean place.
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              Image to PDF, PDF to image, crop, sign, annotate, OCR, and A4 export with a lighter iLovePDF-style layout.
+              Image to PDF, PDF to image, crop, sign, annotate, OCR, and A4 export with a lighter style layout.
             </p>
             <div className="mt-4 inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-100">
               Your files are secured. No one can check them.
@@ -635,22 +634,12 @@ function HomePage() {
                 <div className="mt-2 text-xs text-slate-300">
                   Draw or upload a signature, or place text directly on the preview before you download.
                 </div>
+                <div className="mt-3 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-xs leading-5 text-amber-50">
+                  If you have not subscribed yet, downloaded files will contain a watermark. Subscribe to remove
+                  the watermark and unlock the clean export.
+                </div>
                 <div className="mt-4 space-y-4">
-                  {homeNeedsSubscription ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaywallReason("Text and signature editing are available after subscription approval.");
-                        setPaywallOpen(true);
-                      }}
-                      className="w-full rounded-3xl border border-amber-300/25 bg-amber-400/10 p-5 text-left text-amber-50"
-                    >
-                      <div className="text-sm font-semibold">Subscription required</div>
-                      <div className="mt-1 text-xs leading-5 text-amber-50/80">
-                        Unlock text and signature editing before download. Choose a pass to continue.
-                      </div>
-                    </button>
-                  ) : TEXT_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
+                  {TEXT_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
                     <TextTool onAdd={(value) => setHomeAnnotations((current) => [...current, {
                       id: crypto.randomUUID(),
                       type: "text",
@@ -662,17 +651,24 @@ function HomePage() {
                       fontFamily: "Sora"
                     }])} />
                   ) : null}
-                  {homeNeedsSubscription ? null : (SIGNATURE_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
-                    <SignatureTool onAdd={(image) => setHomeAnnotations((current) => [...current, {
-                      id: crypto.randomUUID(),
-                      type: "signature",
-                      image,
-                      x: 0.62,
-                      y: 0.75,
-                      width: 0.24,
-                      height: 0.1
-                    }])} />
-                  ) : null)}
+                  {SIGNATURE_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
+                    <SignatureTool
+                      onAdd={(image) =>
+                        setHomeAnnotations((current) => [
+                          ...current,
+                          {
+                            id: crypto.randomUUID(),
+                            type: "signature",
+                            image,
+                            x: 0.62,
+                            y: 0.75,
+                            width: 0.24,
+                            height: 0.1
+                          }
+                        ])
+                      }
+                    />
+                  ) : null}
                 </div>
               </div>
               <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
@@ -681,43 +677,28 @@ function HomePage() {
                   Export the selected preview as an image or PDF after adding your changes.
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {homeNeedsSubscription ? (
+                  <button
+                    type="button"
+                    onClick={downloadHomeImage}
+                    disabled={!homePreview}
+                    className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
+                  >
+                    {exportProfile.imageLabel}
+                  </button>
+                  {exportProfile.showPdf ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        setPaywallReason("Subscribe first to download text or signature edits.");
-                        setPaywallOpen(true);
-                      }}
-                      className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 sm:col-span-2"
+                      onClick={downloadHomePdf}
+                      disabled={!homePreview}
+                      className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
                     >
-                      Subscribe to download
+                      {exportProfile.pdfLabel}
                     </button>
                   ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={downloadHomeImage}
-                        disabled={!homePreview}
-                        className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
-                      >
-                        {exportProfile.imageLabel}
-                      </button>
-                      {exportProfile.showPdf ? (
-                        <button
-                          type="button"
-                          onClick={downloadHomePdf}
-                          disabled={!homePreview}
-                          className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
-                        >
-                          {exportProfile.pdfLabel}
-                        </button>
-                      ) : (
-                        <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-5 py-3 text-sm text-slate-300 sm:col-span-2">
-                          This tool exports as an image preview here. Document-style PDF export is available for the PDF
-                          and image-to-PDF workflows.
-                        </div>
-                      )}
-                    </>
+                    <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-5 py-3 text-sm text-slate-300 sm:col-span-2">
+                      This tool exports as an image preview here. Document-style PDF export is available for the PDF
+                      and image-to-PDF workflows.
+                    </div>
                   )}
                   <button
                     type="button"
@@ -1191,26 +1172,26 @@ function ScannerPage() {
                 {showFilterTools ? <FilterPanel activeFilter={filter} onChange={setFilter} /> : null}
               </div>
               {showTextTool ? (
-                <AccessGuard
-                  allowed={canUseEditingTools}
-                  onLocked={() => requirePaid("Unlock paid subscription to add and edit text inside the image or PDF.")}
-                  note="Paid version unlocks text editing, signature placement, combine files, and clean export."
-                >
-                  <div id="text-tool-panel">
-                    <TextTool onAdd={addAnnotationText} />
-                  </div>
-                </AccessGuard>
+                <div id="text-tool-panel" className="space-y-3">
+                  {!canUseEditingTools ? (
+                    <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                      You have not subscribed yet. Downloaded files will contain a watermark. Subscribe to remove
+                      watermarks.
+                    </div>
+                  ) : null}
+                  <TextTool onAdd={addAnnotationText} />
+                </div>
               ) : null}
               {showSignatureTool ? (
-                <AccessGuard
-                  allowed={canUseEditingTools}
-                  onLocked={() => requirePaid("Unlock paid subscription to add and edit signatures inside the image or PDF.")}
-                  note="Paid version unlocks text editing, signature placement, combine files, and clean export."
-                >
-                  <div id="signature-panel">
-                    <SignatureTool onAdd={addSignature} />
-                  </div>
-                </AccessGuard>
+                <div id="signature-panel" className="space-y-3">
+                  {!canUseEditingTools ? (
+                    <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                      You have not subscribed yet. Downloaded files will contain a watermark. Subscribe to remove
+                      watermarks.
+                    </div>
+                  ) : null}
+                  <SignatureTool onAdd={addSignature} />
+                </div>
               ) : null}
               {showOcrTools ? (
                 <AccessGuard
@@ -1390,7 +1371,6 @@ function ScannerPage() {
   };
 
   const canUseEditingTools = Boolean(access?.features?.cleanExport);
-  const editWorkflowLocked = !canUseEditingTools && (TEXT_TOOL_IDS.has(selectedTool) || SIGNATURE_TOOL_IDS.has(selectedTool) || EDIT_TOOL_IDS.has(selectedTool));
 
   const handleRunOcr = async () => {
     if (!preview) {
@@ -1467,11 +1447,6 @@ function ScannerPage() {
       return;
     }
 
-    if (editWorkflowLocked) {
-      requirePaid("Subscribe to download text or signature edits.");
-      return;
-    }
-
     try {
       const sourcePages =
         exportTarget === "combined" && pages.length > 1
@@ -1525,11 +1500,6 @@ function ScannerPage() {
 
   const handleExport = async () => {
     if (!preview) {
-      return;
-    }
-
-    if (editWorkflowLocked) {
-      requirePaid("Subscribe to export text or signature edits.");
       return;
     }
 
