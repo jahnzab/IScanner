@@ -128,12 +128,17 @@ export async function buildCanvasFromImage({
 
   if (watermark) {
     ctx.save();
-    ctx.globalAlpha = 0.22;
+    ctx.globalAlpha = 0.18;
     ctx.fillStyle = "#f97316";
-    ctx.font = `bold ${Math.max(22, canvas.width * 0.04)}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(-0.35);
-    ctx.fillText("Scanned with iScanner Free", -canvas.width * 0.24, 0);
+    ctx.rotate(-0.28);
+    ctx.font = `800 ${Math.max(44, canvas.width * 0.11)}px sans-serif`;
+    ctx.fillText("iScanner", 0, -Math.max(8, canvas.height * 0.03));
+    ctx.globalAlpha = 0.14;
+    ctx.font = `700 ${Math.max(14, canvas.width * 0.03)}px sans-serif`;
+    ctx.fillText("FREE PLAN", 0, Math.max(34, canvas.height * 0.06));
     ctx.restore();
   }
 

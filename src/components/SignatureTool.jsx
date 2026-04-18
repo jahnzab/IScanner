@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
-function drawSignature(ctx, strokes) {
+const SIGNATURE_COLORS = [
+  { label: "Black", value: "#111111" },
+  { label: "Blue", value: "#1d4ed8" },
+  { label: "Green", value: "#166534" }
+];
+
+function drawSignature(ctx, strokes, color = "#111111") {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  ctx.strokeStyle = "#ffffff";
+  ctx.strokeStyle = color;
   ctx.lineWidth = 3.5;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -19,13 +25,13 @@ function drawSignature(ctx, strokes) {
   });
 }
 
-function createSignatureCanvasData(strokes, width, height) {
+function createSignatureCanvasData(strokes, width, height, color) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   ctx.fillStyle = "transparent";
-  drawSignature(ctx, strokes);
+  drawSignature(ctx, strokes, color);
 
   return canvas.toDataURL("image/png");
 }
@@ -33,6 +39,7 @@ function createSignatureCanvasData(strokes, width, height) {
 export function SignatureTool({ onAdd }) {
   const canvasRef = useRef(null);
   const [typing, setTyping] = useState("");
+  const [color, setColor] = useState("#111111");
   const [strokes, setStrokes] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const activeStrokeRef = useRef([]);
@@ -44,8 +51,8 @@ export function SignatureTool({ onAdd }) {
     }
 
     const ctx = canvas.getContext("2d");
-    drawSignature(ctx, strokes);
-  }, [strokes]);
+    drawSignature(ctx, strokes, color);
+  }, [strokes, color]);
 
   const getPoint = (event) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -67,7 +74,7 @@ export function SignatureTool({ onAdd }) {
     activeStrokeRef.current = [...activeStrokeRef.current, getPoint(event)];
 
     const ctx = canvasRef.current.getContext("2d");
-    drawSignature(ctx, [...strokes, activeStrokeRef.current]);
+    drawSignature(ctx, [...strokes, activeStrokeRef.current], color);
   };
 
   const stopDraw = () => {
@@ -109,6 +116,26 @@ export function SignatureTool({ onAdd }) {
           className="w-full rounded-2xl border border-white/10 bg-black/30"
           style={{ touchAction: "none" }}
         />
+        <div className="flex flex-wrap items-center gap-2">
+          {SIGNATURE_COLORS.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setColor(item.value)}
+              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                color === item.value
+                  ? "border-white bg-white text-slate-950"
+                  : "border-white/10 bg-black/20 text-white"
+              }`}
+            >
+              <span
+                className="mr-2 inline-block h-2.5 w-2.5 rounded-full align-middle"
+                style={{ backgroundColor: item.value }}
+              />
+              {item.label}
+            </button>
+          ))}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
@@ -117,7 +144,7 @@ export function SignatureTool({ onAdd }) {
                 return;
               }
 
-              onAdd(createSignatureCanvasData(strokes, 320, 120));
+              onAdd(createSignatureCanvasData(strokes, 320, 120, color));
               setStrokes([]);
             }}
             className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"
@@ -154,7 +181,7 @@ export function SignatureTool({ onAdd }) {
             const ctx = canvas.getContext("2d");
             ctx.fillStyle = "transparent";
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#ffffff";
+            ctx.fillStyle = color;
             ctx.font = "italic 64px 'Segoe Script', 'Snell Roundhand', 'Brush Script MT', cursive";
             ctx.textBaseline = "middle";
             ctx.fillText(typing.trim(), 16, 84);
