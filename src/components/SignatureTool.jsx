@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 function drawSignature(ctx, strokes) {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3.5;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
@@ -54,6 +54,7 @@ export function SignatureTool({ onAdd }) {
 
   const startDraw = (event) => {
     event.preventDefault();
+    canvasRef.current?.setPointerCapture?.(event.pointerId);
     setIsDrawing(true);
     activeStrokeRef.current = [getPoint(event)];
   };
@@ -106,6 +107,7 @@ export function SignatureTool({ onAdd }) {
           onPointerUp={stopDraw}
           onPointerCancel={stopDraw}
           className="w-full rounded-2xl border border-white/10 bg-black/30"
+          style={{ touchAction: "none" }}
         />
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -153,8 +155,9 @@ export function SignatureTool({ onAdd }) {
             ctx.fillStyle = "transparent";
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#ffffff";
-            ctx.font = "64px Caveat";
-            ctx.fillText(typing.trim(), 16, 98);
+            ctx.font = "italic 64px 'Segoe Script', 'Snell Roundhand', 'Brush Script MT', cursive";
+            ctx.textBaseline = "middle";
+            ctx.fillText(typing.trim(), 16, 84);
             onAdd(canvas.toDataURL("image/png"));
           }}
           className="w-full rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"

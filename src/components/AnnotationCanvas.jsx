@@ -79,6 +79,26 @@ export function AnnotationCanvas({ preview, filterStyle, annotations, setAnnotat
 
   const selectedItem = annotations.find((item) => item.id === selected) || null;
 
+  const nudgeSelectedByStep = (dx, dy) => {
+    if (!selectedItem) {
+      return;
+    }
+
+    setAnnotations((current) =>
+      current.map((item) => {
+        if (item.id !== selectedItem.id) {
+          return item;
+        }
+
+        return {
+          ...item,
+          x: Math.min(0.95, Math.max(0.02, (item.x || 0.5) + dx)),
+          y: Math.min(0.95, Math.max(0.02, (item.y || 0.5) + dy))
+        };
+      })
+    );
+  };
+
   const resizeSelectedByStep = (delta) => {
     if (!selectedItem) {
       return;
@@ -108,10 +128,38 @@ export function AnnotationCanvas({ preview, filterStyle, annotations, setAnnotat
 
   return (
     <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-3">
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="text-sm font-semibold text-white">Editing and Adding In Image</div>
         {selectedItem ? (
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => nudgeSelectedByStep(0, -0.02)}
+              className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white"
+            >
+              Up
+            </button>
+            <button
+              type="button"
+              onClick={() => nudgeSelectedByStep(-0.02, 0)}
+              className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white"
+            >
+              Left
+            </button>
+            <button
+              type="button"
+              onClick={() => nudgeSelectedByStep(0.02, 0)}
+              className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white"
+            >
+              Right
+            </button>
+            <button
+              type="button"
+              onClick={() => nudgeSelectedByStep(0, 0.02)}
+              className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white"
+            >
+              Down
+            </button>
             <button
               type="button"
               onClick={() => resizeSelectedByStep(-12)}
@@ -147,18 +195,21 @@ export function AnnotationCanvas({ preview, filterStyle, annotations, setAnnotat
             >
               Remove
             </button>
-            <div className="text-xs text-slate-300">Drag to move. Use --, -, +, ++ or drag the orange handle to resize.</div>
+            <div className="text-xs text-slate-300">
+              Drag to move. Use the arrows for fine placement and --, -, +, ++ for size control.
+            </div>
           </div>
         ) : (
           <div className="text-xs text-slate-400">Select text or signature to move, resize, or remove</div>
         )}
       </div>
-      <div ref={rootRef} className="relative overflow-hidden rounded-[1.25rem]">
+      <div ref={rootRef} className="relative overflow-hidden rounded-[1.25rem]" style={{ touchAction: "none" }}>
         <img src={preview} alt="Editable preview" className="w-full" style={{ filter: filterStyle }} />
         {annotations.map((item) => (
           <div
             key={item.id}
-            onPointerDown={() => {
+            onPointerDown={(event) => {
+              event.stopPropagation();
               setSelected(item.id);
               setDragging(item.id);
             }}
@@ -173,7 +224,7 @@ export function AnnotationCanvas({ preview, filterStyle, annotations, setAnnotat
           >
             {item.type === "text" ? (
               <div
-                className="rounded-lg bg-black/35 px-2 py-1 text-white"
+                className="max-w-[28rem] rounded-lg bg-black/35 px-2 py-1 text-white shadow-lg"
                 style={{ fontSize: item.fontSize, fontFamily: item.fontFamily }}
               >
                 {item.value}
@@ -182,7 +233,7 @@ export function AnnotationCanvas({ preview, filterStyle, annotations, setAnnotat
               <img
                 src={item.image}
                 alt="Signature"
-                className="max-w-[180px] rounded-md bg-black/20 p-1"
+                className="max-w-[180px] rounded-md bg-black/20 p-1 shadow-lg"
                 style={{ width: `${(item.width || 0.25) * 100}%` }}
               />
             )}

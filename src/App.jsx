@@ -41,7 +41,7 @@ const TOOL_CARDS = [
     title: "Edit PDF",
     subtitle: "Add text, signatures, and page cleanup inside PDF files.",
     mode: "pdfToPdf",
-    accent: "from-red-500/20 to-orange-400/10",
+    accent: "from-rose-500/45 to-orange-400/20",
     cta: "Open PDF editor"
   },
   {
@@ -49,7 +49,7 @@ const TOOL_CARDS = [
     title: "Edit Image",
     subtitle: "Mark up images with text, signatures, and crop control.",
     mode: "imageToPdf",
-    accent: "from-amber-500/20 to-rose-400/10",
+    accent: "from-amber-400/45 to-pink-500/20",
     cta: "Open image editor"
   },
   {
@@ -57,7 +57,7 @@ const TOOL_CARDS = [
     title: "Add Text PDF",
     subtitle: "Place labels, notes, or timestamps on a PDF page.",
     mode: "pdfToPdf",
-    accent: "from-violet-500/20 to-fuchsia-400/10",
+    accent: "from-violet-500/45 to-fuchsia-400/20",
     cta: "Text on PDF"
   },
   {
@@ -65,7 +65,7 @@ const TOOL_CARDS = [
     title: "Add Signature PDF",
     subtitle: "Draw or upload a signature and place it on a PDF.",
     mode: "pdfToPdf",
-    accent: "from-emerald-500/20 to-teal-400/10",
+    accent: "from-emerald-400/45 to-teal-400/20",
     cta: "Sign PDF"
   },
   {
@@ -73,7 +73,7 @@ const TOOL_CARDS = [
     title: "Add Text Image",
     subtitle: "Place text on an image before exporting or saving.",
     mode: "imageToPdf",
-    accent: "from-pink-500/20 to-rose-400/10",
+    accent: "from-fuchsia-500/45 to-rose-400/20",
     cta: "Text on image"
   },
   {
@@ -81,7 +81,7 @@ const TOOL_CARDS = [
     title: "Add Signature Image",
     subtitle: "Draw or upload a signature and place it on an image.",
     mode: "imageToPdf",
-    accent: "from-cyan-500/20 to-sky-400/10",
+    accent: "from-cyan-400/45 to-sky-400/20",
     cta: "Sign image"
   },
   {
@@ -89,7 +89,7 @@ const TOOL_CARDS = [
     title: "Image to PDF",
     subtitle: "Turn photos and screenshots into a clean PDF.",
     mode: "imageToPdf",
-    accent: "from-rose-500/20 to-orange-400/10",
+    accent: "from-rose-400/45 to-orange-300/20",
     cta: "Convert image"
   },
   {
@@ -97,7 +97,7 @@ const TOOL_CARDS = [
     title: "PDF to Image",
     subtitle: "Export PDF pages as image files with the same layout.",
     mode: "pdfToImage",
-    accent: "from-sky-500/20 to-cyan-400/10",
+    accent: "from-sky-400/45 to-cyan-400/20",
     cta: "Export images"
   },
   {
@@ -105,7 +105,7 @@ const TOOL_CARDS = [
     title: "Combine PDFs",
     subtitle: "Merge multiple PDFs into one document.",
     mode: "pdfToPdf",
-    accent: "from-emerald-500/20 to-teal-400/10",
+    accent: "from-green-400/45 to-emerald-400/20",
     cta: "Merge PDFs"
   },
   {
@@ -113,7 +113,7 @@ const TOOL_CARDS = [
     title: "PDF to Word",
     subtitle: "Extract text from PDFs with OCR for copy and editing.",
     mode: "pdfToPdf",
-    accent: "from-violet-500/20 to-fuchsia-400/10",
+    accent: "from-indigo-400/45 to-violet-400/20",
     cta: "Extract text"
   }
 ];
@@ -132,6 +132,16 @@ function getToolAnchor(toolId) {
   }
 
   return "upload-section";
+}
+
+function getHomeExportProfile(toolId) {
+  const pdfAllowed = !new Set(["pdfToImage", "pdfToWord"]).has(toolId);
+
+  return {
+    imageLabel: "Download Image",
+    pdfLabel: pdfAllowed ? "Download PDF" : "",
+    showPdf: pdfAllowed
+  };
 }
 
 function getToolCopy(toolId) {
@@ -256,6 +266,7 @@ function HomePage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
+  const exportProfile = useMemo(() => getHomeExportProfile(selectedTool.id), [selectedTool.id]);
 
   useEffect(() => {
     api.getPublicConfig().then(setConfig).catch(() => {});
@@ -335,6 +346,58 @@ function HomePage() {
     }
   };
 
+  const buildHomeExportCanvas = async () => {
+    if (!homePreview) {
+      return null;
+    }
+
+    const image = new Image();
+    image.src = homePreview;
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = reject;
+    });
+
+    return buildCanvasFromImage({
+      image,
+      corners: null,
+      filterStyle: "none",
+      watermark: false,
+      annotations: homeAnnotations
+    });
+  };
+
+  const downloadHomeImage = async () => {
+    const canvas = await buildHomeExportCanvas();
+    if (!canvas) {
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = `${selectedTool.id || "iscanner"}-preview.png`;
+    link.click();
+  };
+
+  const downloadHomePdf = async () => {
+    const canvas = await buildHomeExportCanvas();
+    if (!canvas) {
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 24;
+    const scale = Math.min((pageWidth - margin * 2) / canvas.width, (pageHeight - margin * 2) / canvas.height);
+    const renderWidth = canvas.width * scale;
+    const renderHeight = canvas.height * scale;
+    const offsetX = (pageWidth - renderWidth) / 2;
+    const offsetY = (pageHeight - renderHeight) / 2;
+    doc.addImage(canvas.toDataURL("image/png"), "PNG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
+    doc.save(`${selectedTool.id || "iscanner"}-preview.pdf`);
+  };
+
   return (
     <div className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -394,27 +457,32 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {TOOL_CARDS.map((tool) => (
-              <button
-                key={tool.id}
-                type="button"
-                onClick={() => {
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {TOOL_CARDS.map((tool) => (
+                <button
+                  key={tool.id}
+                  type="button"
+                  onClick={() => {
                   setSelectedTool(tool);
                   window.setTimeout(() => {
                     uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }, 30);
                 }}
-                className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20"
-              >
-                <div className={`inline-flex rounded-2xl bg-gradient-to-br ${tool.accent} px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white`}>
-                  {tool.cta}
-                </div>
-                <div className="mt-4 text-xl font-semibold text-white">{tool.title}</div>
-                <div className="mt-2 text-sm leading-6 text-slate-300">{tool.subtitle}</div>
+                  className="group relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${tool.accent} opacity-25 transition group-hover:opacity-35`} />
+                  <div className="absolute inset-x-0 top-0 h-px bg-white/15" />
+                  <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-3xl" />
+                  <div className="relative">
+                    <div className={`inline-flex rounded-2xl bg-gradient-to-br ${tool.accent} px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white shadow-lg`}>
+                      {tool.cta}
+                    </div>
+                    <div className="mt-4 text-xl font-semibold text-white">{tool.title}</div>
+                    <div className="mt-2 text-sm leading-6 text-slate-200/90">{tool.subtitle}</div>
+                  </div>
               </button>
-            ))}
-          </div>
+              ))}
+            </div>
 
           <div ref={uploadSectionRef} id="home-upload-section" className="mt-6 rounded-[2rem] border border-white/10 bg-white/6 p-6 shadow-glow scroll-mt-24">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -450,7 +518,7 @@ function HomePage() {
               />
             </div>
 
-            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr,0.8fr]">
+            <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr,1.1fr]">
               <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
                 <div className="text-sm font-semibold text-white">Selected files</div>
                 <div className="mt-2 text-xs text-slate-300">
@@ -473,9 +541,9 @@ function HomePage() {
                 <div className="mt-2 text-xs text-slate-300">
                   This is the quick home preview. Add text or signature below, then download directly from here.
                 </div>
-                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-white/10 bg-black/30">
+                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-white/10 bg-black/30 shadow-2xl">
                   {homePreview ? (
-                    <div className="max-h-[36rem] overflow-auto p-2">
+                    <div className="max-h-[44rem] overflow-auto p-2">
                       <AnnotationCanvas
                         preview={homePreview}
                         filterStyle="none"
@@ -532,65 +600,27 @@ function HomePage() {
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <button
                     type="button"
-                    onClick={async () => {
-                      if (!homePreview) return;
-                      const image = new Image();
-                      image.src = homePreview;
-                      await new Promise((resolve, reject) => {
-                        image.onload = resolve;
-                        image.onerror = reject;
-                      });
-                      const canvas = await buildCanvasFromImage({
-                        image,
-                        corners: null,
-                        filterStyle: "none",
-                        watermark: false,
-                        annotations: homeAnnotations
-                      });
-                      const link = document.createElement("a");
-                      link.href = canvas.toDataURL("image/png");
-                      link.download = "iscanner-home-preview.png";
-                      link.click();
-                    }}
+                    onClick={downloadHomeImage}
                     disabled={!homePreview}
                     className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
                   >
-                    Download Image
+                    {exportProfile.imageLabel}
                   </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!homePreview) return;
-                      const image = new Image();
-                      image.src = homePreview;
-                      await new Promise((resolve, reject) => {
-                        image.onload = resolve;
-                        image.onerror = reject;
-                      });
-                      const canvas = await buildCanvasFromImage({
-                        image,
-                        corners: null,
-                        filterStyle: "none",
-                        watermark: false,
-                        annotations: homeAnnotations
-                      });
-                      const doc = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
-                      const pageWidth = doc.internal.pageSize.getWidth();
-                      const pageHeight = doc.internal.pageSize.getHeight();
-                      const margin = 24;
-                      const scale = Math.min((pageWidth - margin * 2) / canvas.width, (pageHeight - margin * 2) / canvas.height);
-                      const renderWidth = canvas.width * scale;
-                      const renderHeight = canvas.height * scale;
-                      const offsetX = (pageWidth - renderWidth) / 2;
-                      const offsetY = (pageHeight - renderHeight) / 2;
-                      doc.addImage(canvas.toDataURL("image/png"), "PNG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
-                      doc.save("iscanner-home-preview.pdf");
-                    }}
-                    disabled={!homePreview}
-                    className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
-                  >
-                    Download PDF
-                  </button>
+                  {exportProfile.showPdf ? (
+                    <button
+                      type="button"
+                      onClick={downloadHomePdf}
+                      disabled={!homePreview}
+                      className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                    >
+                      {exportProfile.pdfLabel}
+                    </button>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-5 py-3 text-sm text-slate-300 sm:col-span-2">
+                      This tool exports as an image preview here. Document-style PDF export is available for the PDF
+                      and image-to-PDF workflows.
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => navigate("/recover")}
