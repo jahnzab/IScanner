@@ -30,9 +30,28 @@ const DEFAULT_CORNERS = [
 ];
 
 const CONVERSION_MODES = [
-  { id: "imageToPdf", label: "Image To PDF" },
-  { id: "pdfToPdf", label: "PDF To PDF" },
-  { id: "pdfToImage", label: "PDF To Image" }
+  { id: "imageToPdf", label: "Images to PDF" },
+  { id: "pdfToPdf", label: "Combine PDFs" },
+  { id: "pdfToImage", label: "PDF to Images" }
+];
+
+const TOOL_HIGHLIGHTS = [
+  {
+    title: "Original first",
+    text: "Uploads stay uncropped until you choose to scan or crop them."
+  },
+  {
+    title: "A4 export",
+    text: "PDF output uses A4 pages with breathing room around each result."
+  },
+  {
+    title: "Selected page tools",
+    text: "Text and signature changes apply only to the page you are editing."
+  },
+  {
+    title: "Manual approval",
+    text: "Payment stays pending until the admin approves the UTR."
+  }
 ];
 
 function createPageEntry(src) {
@@ -63,7 +82,7 @@ function ScannerPage() {
   const [freeUsed, setFreeUsed] = useState(localStorage.getItem(STORAGE_KEYS.freeUsed) === "true");
   const [access, setAccess] = useState(null);
   const [pages, setPages] = useState([]);
-  const [corners, setCorners] = useState(DEFAULT_CORNERS);
+  const [corners, setCorners] = useState(null);
   const [annotations, setAnnotations] = useState([]);
   const [ocrText, setOcrText] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -94,7 +113,7 @@ function ScannerPage() {
     }
 
     setSelectedPageIndex(index);
-    setCorners(page.corners || DEFAULT_CORNERS);
+    setCorners(page.corners || null);
     setAnnotations([]);
     setOcrText("");
   };
@@ -172,44 +191,6 @@ function ScannerPage() {
     }
     return "Export as PDF";
   }, [pages.length, exportTarget]);
-
-  useEffect(() => {
-    if (!preview) {
-      setCorners(DEFAULT_CORNERS);
-      return;
-    }
-
-    const currentPage = pages[selectedPageIndex];
-    if (currentPage?.corners?.length === 4) {
-      setCorners(currentPage.corners);
-      return;
-    }
-
-    const image = imageRef.current;
-    if (!image) {
-      return;
-    }
-
-    const runDetection = async () => {
-      setEdgeLoading(true);
-      const detected = await detectDocumentCorners(image);
-      setCorners(detected);
-      setPages((current) =>
-        current.map((page, index) => (index === selectedPageIndex ? { ...page, corners: detected } : page))
-      );
-      setEdgeLoading(false);
-    };
-
-    if (image.complete) {
-      runDetection();
-      return;
-    }
-
-    image.onload = runDetection;
-    return () => {
-      image.onload = null;
-    };
-  }, [preview, selectedPageIndex]);
 
   const updateCurrentPageCorners = (nextCorners) => {
     setCorners(nextCorners);
@@ -292,10 +273,11 @@ function ScannerPage() {
       const nextIndex = Math.max(0, nextPages.length - newPages.length);
 
       setSelectedPageIndex(nextIndex);
+      setCorners(null);
       return nextPages;
     });
 
-    setCorners(DEFAULT_CORNERS);
+    setCorners(null);
     setAnnotations([]);
     setOcrText("");
     setMessage("");
@@ -399,7 +381,7 @@ function ScannerPage() {
     const pageCorners =
       page.id === pages[selectedPageIndex]?.id
         ? corners
-        : page.corners || (await detectDocumentCorners(image));
+        : page.corners || null;
 
     return buildCanvasFromImage({
       image,
@@ -504,8 +486,8 @@ function ScannerPage() {
         : [pages[selectedPageIndex]];
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const gap = 8;
+    const margin = 32;
+    const gap = 12;
     const canvases = await Promise.all(sourcePages.map((page) => renderPageCanvas(page)));
 
     if (canvases.length === 1) {
@@ -597,11 +579,10 @@ function ScannerPage() {
         utr,
         plan: paymentPlan.id
       });
-      setStoredToken(response.token);
-      setAccess(response.access);
+      setPaymentStatus(response.message || "Payment saved. Waiting for admin approval.");
       setPaymentOpen(false);
       setPaywallOpen(false);
-      setMessage(`Paid features unlocked successfully. Your ${formatPlanName(response.access.plan)} pass is active until ${formatAccessExpiry(response.access.expiry)}.`);
+      setMessage(response.message || "Payment saved. Admin approval is required before access is unlocked.");
     } catch (error) {
       setPaymentStatus(error.message);
       setMessage(error.message);
@@ -616,14 +597,17 @@ function ScannerPage() {
       return;
     }
 
+    let nextCorners = null;
     setPages((current) => {
       const nextPages = [...current];
       const [page] = nextPages.splice(fromIndex, 1);
+      nextCorners = page?.corners || null;
       nextPages.splice(toIndex, 0, page);
       return nextPages;
     });
 
     setSelectedPageIndex(toIndex);
+    setCorners(nextCorners);
     setAnnotations([]);
     setOcrText("");
   };
@@ -633,11 +617,11 @@ function ScannerPage() {
       return;
     }
 
-    let nextCorners = DEFAULT_CORNERS;
+    let nextCorners = null;
     setPages((current) => {
       const nextPages = [...current];
       const [page] = nextPages.splice(fromIndex, 1);
-      nextCorners = page?.corners || DEFAULT_CORNERS;
+      nextCorners = page?.corners || null;
       nextPages.splice(toIndex, 0, page);
       return nextPages;
     });
@@ -651,7 +635,9 @@ function ScannerPage() {
   const removePage = (indexToRemove) => {
     setPages((current) => {
       const nextPages = current.filter((_, index) => index !== indexToRemove);
-      setSelectedPageIndex((currentIndex) => Math.max(0, Math.min(currentIndex, nextPages.length - 1)));
+      const nextIndex = nextPages.length ? Math.max(0, Math.min(selectedPageIndex, nextPages.length - 1)) : 0;
+      setSelectedPageIndex(nextIndex);
+      setCorners(nextPages[nextIndex]?.corners || null);
       return nextPages;
     });
     setAnnotations([]);
@@ -664,9 +650,11 @@ function ScannerPage() {
         <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-xs uppercase tracking-[0.35em] text-accent">Document Scanner</div>
-            <h1 className="mt-3 font-display text-5xl text-white sm:text-6xl">Scan, clean, annotate, export.</h1>
+            <h1 className="mt-3 max-w-3xl font-display text-5xl text-white sm:text-6xl">
+              Everything you need to turn documents into clean, shareable files.
+            </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              Mobile-friendly document scanner with one-time free access, manual UPI upgrades, OCR, signatures, and PDF export.
+              Mobile-friendly document workspace for image uploads, PDF conversion, manual crop control, signatures, OCR, and A4 PDF export.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {CONVERSION_MODES.map((mode) => (
@@ -717,6 +705,37 @@ function ScannerPage() {
           </div>
         </header>
 
+        <section className="mb-6 rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/8 via-white/5 to-transparent p-5 shadow-glow">
+          <div className="grid gap-5 lg:grid-cols-[1.15fr,0.85fr] lg:items-start">
+            <div>
+              <div className="text-xs uppercase tracking-[0.3em] text-accent">Tool hub</div>
+              <h2 className="mt-2 text-3xl font-semibold text-white">Start with the right workflow</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                Pick a conversion mode, upload the right file type, and keep control over crop, signature, and page layout.
+                Nothing is auto-cropped unless you choose it.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {CONVERSION_MODES.map((mode) => (
+                  <span
+                    key={mode.id}
+                    className="rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200"
+                  >
+                    {mode.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {TOOL_HIGHLIGHTS.map((item) => (
+                <div key={item.title} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="text-sm font-semibold text-white">{item.title}</div>
+                  <div className="mt-2 text-xs leading-6 text-slate-300">{item.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {message ? (
           <div className="mb-6 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
             {message}
@@ -729,7 +748,7 @@ function ScannerPage() {
               <div className="text-xs uppercase tracking-[0.3em] text-accent">Quick Actions</div>
               <h2 className="mt-2 text-2xl font-semibold text-white">Edit and download from one place</h2>
               <p className="mt-2 text-sm text-slate-300">
-                Upload an image or PDF, auto-crop the page, add text, place a signature, stamp current time, then export below.
+                Upload an image or PDF, then choose whether to keep it original, crop it manually, add text, place a signature, or stamp current time.
               </p>
               {!features.cleanExport ? (
                 <p className="mt-2 text-xs text-amber-200">
@@ -806,7 +825,7 @@ function ScannerPage() {
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold text-white">Ready to export</div>
                       <div className="text-xs text-emerald-100/80">
-                        After adjusting the border, export the scanned result as either a cropped PDF or a cropped image.
+                        Keep the original image, or crop only the pages you want. Signature and text tools stay on the selected page.
                       </div>
 
                       {pages.length > 1 ? (
@@ -927,13 +946,23 @@ function ScannerPage() {
                     </div>
                   </div>
                 </div>
-                <CropTool preview={preview} corners={corners} onChange={updateCurrentPageCorners} />
+                <CropTool
+                  preview={preview}
+                  corners={corners}
+                  onChange={updateCurrentPageCorners}
+                  onInitialize={() => {
+                    setCorners(DEFAULT_CORNERS);
+                    setPages((current) =>
+                      current.map((page, index) => (index === selectedPageIndex ? { ...page, corners: DEFAULT_CORNERS } : page))
+                    );
+                  }}
+                />
                 <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-white">Scanned output preview</div>
                       <div className="text-xs text-slate-300">
-                        This is the cropped result that will be downloaded, not the original upload.
+                        This shows the final page that will be downloaded, with A4 padding on PDF export.
                       </div>
                     </div>
                     {renderingPreview ? <div className="text-xs text-slate-300">Refreshing preview...</div> : null}

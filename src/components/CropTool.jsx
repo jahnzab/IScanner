@@ -1,4 +1,11 @@
-export function CropTool({ preview, corners, onChange }) {
+const DEFAULT_CORNERS = [
+  { x: 0.06, y: 0.04 },
+  { x: 0.94, y: 0.04 },
+  { x: 0.94, y: 0.96 },
+  { x: 0.06, y: 0.96 }
+];
+
+export function CropTool({ preview, corners, onChange, onInitialize }) {
   const orderedCorners = corners?.length === 4 ? corners : [];
 
   const updateRectangle = (index, x, y) => {
@@ -69,6 +76,38 @@ export function CropTool({ preview, corners, onChange }) {
 
   if (!preview) {
     return null;
+  }
+
+  if (!orderedCorners.length) {
+    return (
+      <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-3">
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <div>
+            <div className="text-sm font-semibold text-white">Crop tool</div>
+            <div className="text-xs text-slate-300">The upload stays original until you choose to crop it.</div>
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-[1.25rem] border border-dashed border-white/10 bg-black/30">
+          <img src={preview} alt="Document preview" className="w-full object-contain" />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={onInitialize}
+            className="rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-white"
+          >
+            Start manual crop
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange(DEFAULT_CORNERS)}
+            className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white"
+          >
+            Use default page box
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const polygonPoints = orderedCorners

@@ -4,7 +4,7 @@ const MODE_CONFIG = {
   imageToPdf: {
     title: "Upload image file",
     multiTitle: "Upload multiple images",
-    description: "Add one image or many images. New uploads stay in the current document and do not remove previous ones.",
+    description: "Add one image or many images. Files stay original until you choose to crop them.",
     accept: "image/*",
     allowCamera: true
   },
@@ -61,6 +61,7 @@ export function ImageUpload({ onSelectFiles, loading, hasPages = false, mode = "
         <div className="max-w-md">
           <div className="text-lg font-semibold text-white">{hasPages ? `Add another ${config.title.toLowerCase().replace("upload ", "")}` : config.title}</div>
           <div className="mt-2 text-sm leading-6 text-slate-300">{config.description}</div>
+          <div className="mt-3 text-xs text-slate-400">No automatic crop is applied until you choose Scan or Crop.</div>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <button
               type="button"

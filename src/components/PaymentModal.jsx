@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 
-function createUpiIntentUrl(packageName, upiUrl) {
-  const normalized = upiUrl.replace(/^upi:\/\//, "");
-  return `intent://${normalized}#Intent;scheme=upi;package=${packageName};end`;
-}
-
 export function PaymentModal({ open, plan, config, onClose, onSubmit, loading, status }) {
   const [qrSrc, setQrSrc] = useState("");
   const [email, setEmail] = useState("");
@@ -57,54 +52,33 @@ export function PaymentModal({ open, plan, config, onClose, onSubmit, loading, s
         <div className="grid gap-6 p-6 pt-4 md:grid-cols-[240px,1fr]">
           <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
             {qrSrc ? <img src={qrSrc} alt="UPI QR code" className="mx-auto rounded-2xl bg-white p-3" /> : null}
-            <div className="mt-4 text-center text-xs text-slate-300">
-              Scan from GPay, PhonePe, Paytm, or BHIM
+            <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-4 py-3 text-center text-xs leading-5 text-emerald-50">
+              Best option: scan this QR code directly inside PhonePe, GPay, Paytm, BHIM, or any UPI app.
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="rounded-[1.5rem] border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-50">
-              Use your email and UTR so the admin can activate the subscription. Updates are usually completed in about 5 minutes.
+              If an app shows a security error, use the QR code instead of the app-open buttons. Submit your email and UTR so the admin can review the payment and unlock access after approval.
             </div>
 
             <div className="grid gap-2 text-sm text-slate-200 sm:grid-cols-2">
-              <a
-                href={createUpiIntentUrl("com.google.android.apps.nbu.paisa.user", upiUrl)}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-2xl bg-white/10 px-4 py-3 text-center font-semibold"
-              >
-                Open GPay
-              </a>
-              <a
-                href={createUpiIntentUrl("com.phonepe.app", upiUrl)}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-2xl bg-white/10 px-4 py-3 text-center font-semibold"
-              >
-                Open PhonePe
-              </a>
-              <a
-                href={createUpiIntentUrl("net.one97.paytm", upiUrl)}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-2xl bg-white/10 px-4 py-3 text-center font-semibold"
-              >
-                Open Paytm
-              </a>
-              <a
-                href={createUpiIntentUrl("in.org.npci.upiapp", upiUrl)}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-2xl bg-white/10 px-4 py-3 text-center font-semibold"
-              >
-                Open BHIM
-              </a>
-              <a
-                href={upiUrl}
-                className="sm:col-span-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-center font-semibold text-slate-100"
-              >
-                Open default UPI app
+              {upiUrl ? (
+                <a
+                  href={upiUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-center font-semibold text-slate-100"
+                >
+                  Open UPI payment link
+                </a>
+              ) : (
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-center text-slate-400">
+                  UPI link will appear after config is added
+                </div>
+              )}
+              <a href="#payment-email" className="rounded-2xl bg-white/10 px-4 py-3 text-center font-semibold">
+                Fill email first
               </a>
             </div>
 
@@ -142,16 +116,16 @@ export function PaymentModal({ open, plan, config, onClose, onSubmit, loading, s
               disabled={loading || !config.upiId}
               className="w-full rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {loading ? "Saving payment..." : "I paid, activate access"}
+              {loading ? "Saving payment..." : "Submit payment for approval"}
             </button>
             {status ? <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-100">{status}</div> : null}
             {!config.upiId ? (
               <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                UPI is not configured yet. Add `UPI_ID` and `UPI_NAME` in `backend/.env`.
+                UPI is not configured yet. Add `UPI_ID` or `UPI_D`, plus `UPI_NAME`, in `backend/.env`.
               </div>
             ) : null}
             <div className="text-xs leading-5 text-slate-400">
-              Access is issued immediately and can be revoked if the UTR is fake. Approved UTRs stay active until expiry.
+              Access is activated only after admin approval. Fake UTRs can be rejected and blacklisted.
             </div>
           </div>
         </div>
