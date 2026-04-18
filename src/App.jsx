@@ -1493,6 +1493,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<ScannerPage />} />
+      <Route path="/tool/:toolId" element={<ScannerPage />} />
       <Route path="/recover" element={<RecoverPage />} />
       <Route path="/admin" element={<AdminPage />} />
     </Routes>
