@@ -45,7 +45,7 @@ export function ImageUpload({ onSelectFiles, loading, hasPages = false, mode = "
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-accent">Capture</p>
-          <h2 className="font-display text-3xl text-white">Bring in your document</h2>
+          <h2 className="font-display text-3xl text-white">Select a file</h2>
         </div>
         <div className="text-sm text-slate-300">Drag in a file or open the phone camera.</div>
       </div>
@@ -59,7 +59,9 @@ export function ImageUpload({ onSelectFiles, loading, hasPages = false, mode = "
         className="grid min-h-64 place-items-center rounded-[1.5rem] border border-dashed border-white/15 bg-grid grid-bg bg-[length:38px_38px] p-8 text-center"
       >
         <div className="max-w-md">
-          <div className="text-lg font-semibold text-white">{hasPages ? `Add another ${config.title.toLowerCase().replace("upload ", "")}` : config.title}</div>
+          <div className="text-lg font-semibold text-white">
+            {hasPages ? `Add another ${config.title.toLowerCase().replace("upload ", "")}` : config.title}
+          </div>
           <div className="mt-2 text-sm leading-6 text-slate-300">{config.description}</div>
           <div className="mt-3 text-xs text-slate-400">No automatic crop is applied until you choose Scan or Crop.</div>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -67,9 +69,9 @@ export function ImageUpload({ onSelectFiles, loading, hasPages = false, mode = "
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={loading}
-              className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:scale-[1.02]"
+              className="rounded-[1.6rem] bg-[#ef4444] px-8 py-4 text-base font-semibold text-white shadow-lg shadow-red-500/20 transition hover:-translate-y-0.5 hover:bg-[#dc2626]"
             >
-              {loading ? "Preparing..." : hasPages ? `Upload second ${mode === "imageToPdf" ? "image" : "PDF"}` : config.title}
+              {loading ? "Preparing..." : hasPages ? `Add ${mode === "imageToPdf" ? "image" : "PDF"}` : `Select ${mode === "imageToPdf" ? "image file" : "PDF file"}`}
             </button>
             <button
               type="button"

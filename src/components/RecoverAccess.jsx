@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export function RecoverAccess({ onRecover, status, onBack }) {
-  const [email, setEmail] = useState("");
+export function RecoverAccess({ onRecover, status, onBack, initialEmail = "" }) {
+  const [email, setEmail] = useState(initialEmail);
+
+  useEffect(() => {
+    setEmail(initialEmail);
+  }, [initialEmail]);
 
   return (
     <section className="mx-auto max-w-xl rounded-[2rem] border border-white/10 bg-white/5 p-6">
@@ -15,9 +19,9 @@ export function RecoverAccess({ onRecover, status, onBack }) {
         </button>
       </div>
       <div className="text-xs uppercase tracking-[0.3em] text-accent">Recovery</div>
-      <h1 className="mt-2 font-display text-4xl text-white">Check status of paid subscription</h1>
+      <h1 className="mt-2 font-display text-4xl text-white">Check payment status</h1>
       <p className="mt-3 text-sm leading-6 text-slate-300">
-        Enter the purchase email to check whether your paid subscription is active. Manual payment approval usually takes about 5 minutes.
+        Enter the purchase email to check whether your payment is pending, approved, or rejected. Manual approval usually takes about 5 minutes.
       </p>
       <div className="mt-6 space-y-4">
         <input
@@ -31,7 +35,7 @@ export function RecoverAccess({ onRecover, status, onBack }) {
           onClick={() => onRecover(email)}
           className="w-full rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-white"
         >
-          Check paid subscription status
+          Check payment status
         </button>
         {status ? <div className="text-sm text-slate-200">{status}</div> : null}
       </div>

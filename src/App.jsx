@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import { AccessGuard } from "./components/AccessGuard";
 import { AdminPanel } from "./components/AdminPanel";
@@ -104,8 +104,13 @@ function ScannerPage() {
   const [exportLayout, setExportLayout] = useState("vertical");
   const [conversionMode, setConversionMode] = useState("imageToPdf");
   const imageRef = useRef(null);
+  const uploadSectionRef = useRef(null);
+  const toolsSectionRef = useRef(null);
   const navigate = useNavigate();
   const preview = pages[selectedPageIndex]?.src || "";
+  const scrollTo = (ref) => {
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const selectPage = (index) => {
     const page = pages[index];
     if (!page) {
@@ -582,7 +587,7 @@ function ScannerPage() {
       setPaymentStatus(response.message || "Payment saved. Waiting for admin approval.");
       setPaymentOpen(false);
       setPaywallOpen(false);
-      setMessage(response.message || "Payment saved. Admin approval is required before access is unlocked.");
+      navigate("/recover", { state: { email: String(email).trim() } });
     } catch (error) {
       setPaymentStatus(error.message);
       setMessage(error.message);
@@ -647,14 +652,67 @@ function ScannerPage() {
   return (
     <div className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
+        <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-white/10 bg-slate-950/80 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <button
+              type="button"
+              onClick={() => scrollTo(uploadSectionRef)}
+              className="inline-flex items-center gap-3 text-left"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-2xl font-black text-slate-950">
+                i
+              </div>
+              <div>
+                <div className="text-sm font-black uppercase tracking-[0.18em] text-white">iScanner</div>
+                <div className="text-xs text-slate-400">PDF editor and converter</div>
+              </div>
+            </button>
+
+            <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 lg:justify-center">
+              {[
+                { label: "Upload", action: () => scrollTo(uploadSectionRef) },
+                { label: "Tools", action: () => scrollTo(toolsSectionRef) },
+                { label: "Status", action: () => navigate("/recover") },
+                { label: "Admin", action: () => navigate("/admin") }
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={item.action}
+                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-100"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => scrollTo(uploadSectionRef)}
+                className="rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-950"
+              >
+                Select file
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/recover")}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white"
+              >
+                Check status
+              </button>
+            </div>
+          </div>
+        </div>
+
         <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="text-xs uppercase tracking-[0.35em] text-accent">Document Scanner</div>
+            <div className="text-xs uppercase tracking-[0.35em] text-accent">Document Suite</div>
             <h1 className="mt-3 max-w-3xl font-display text-5xl text-white sm:text-6xl">
-              Everything you need to turn documents into clean, shareable files.
+              All your PDF and document tools in one clean place.
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              Mobile-friendly document workspace for image uploads, PDF conversion, manual crop control, signatures, OCR, and A4 PDF export.
+              Image to PDF, PDF to image, crop, sign, annotate, OCR, and A4 export with a lighter iLovePDF-style layout.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {CONVERSION_MODES.map((mode) => (
@@ -664,6 +722,7 @@ function ScannerPage() {
                   onClick={() => {
                     setConversionMode(mode.id);
                     setMessage("");
+                    scrollTo(uploadSectionRef);
                   }}
                   className={`rounded-full border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white ${
                     conversionMode === mode.id ? "bg-accent/20" : "bg-white/10"
@@ -685,44 +744,35 @@ function ScannerPage() {
                 }}
                 className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white"
               >
-                Unlock Subscription
+                Choose Plan
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => navigate("/recover")}
-              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Check Paid Status
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/admin")}
-              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Admin
-            </button>
           </div>
         </header>
 
         <section className="mb-6 rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/8 via-white/5 to-transparent p-5 shadow-glow">
-          <div className="grid gap-5 lg:grid-cols-[1.15fr,0.85fr] lg:items-start">
+          <div className="grid gap-5 lg:grid-cols-[1.05fr,0.95fr] lg:items-center">
             <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-accent">Tool hub</div>
-              <h2 className="mt-2 text-3xl font-semibold text-white">Start with the right workflow</h2>
+              <div className="text-xs uppercase tracking-[0.3em] text-accent">Featured</div>
+              <h2 className="mt-2 text-3xl font-semibold text-white">Pick a tool, then drop into the right section</h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                Pick a conversion mode, upload the right file type, and keep control over crop, signature, and page layout.
-                Nothing is auto-cropped unless you choose it.
+                Buttons now jump straight to upload, conversion, or payment status so the workflow feels fast on both desktop and mobile.
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {CONVERSION_MODES.map((mode) => (
-                  <span
-                    key={mode.id}
-                    className="rounded-full border border-white/10 bg-black/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200"
-                  >
-                    {mode.label}
-                  </span>
-                ))}
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => scrollTo(uploadSectionRef)}
+                  className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950"
+                >
+                  Select PDF file
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/recover")}
+                  className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Check payment status
+                </button>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -730,6 +780,32 @@ function ScannerPage() {
                 <div key={item.title} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                   <div className="text-sm font-semibold text-white">{item.title}</div>
                   <div className="mt-2 text-xs leading-6 text-slate-300">{item.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mb-6 rounded-[2rem] border border-white/10 bg-white/5 p-5">
+          <div className="grid gap-5 lg:grid-cols-[1fr,1.1fr] lg:items-center">
+            <div>
+              <div className="text-xs uppercase tracking-[0.3em] text-accent">Upload</div>
+              <h2 className="mt-2 text-2xl font-semibold text-white">Start here</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                Select a file first, then move into crop, signature, OCR, and export.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                "Image to PDF",
+                "PDF to Image",
+                "Combine PDFs",
+                "Add Signature",
+                "Add Text",
+                "OCR"
+              ].map((label) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white">
+                  {label}
                 </div>
               ))}
             </div>
@@ -805,12 +881,14 @@ function ScannerPage() {
 
         <div className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
           <div className="space-y-6">
-            <ImageUpload
-              onSelectFiles={handleSelectFiles}
-              loading={uploading}
-              hasPages={pages.length > 0}
-              mode={conversionMode}
-            />
+            <div ref={uploadSectionRef} id="upload-section">
+              <ImageUpload
+                onSelectFiles={handleSelectFiles}
+                loading={uploading}
+                hasPages={pages.length > 0}
+                mode={conversionMode}
+              />
+            </div>
             {preview ? (
               <div className="rounded-[2rem] border border-white/10 bg-white/5 p-4">
                 <img
@@ -1081,7 +1159,9 @@ function ScannerPage() {
               </div>
             ) : null}
 
-            <FilterPanel activeFilter={filter} onChange={setFilter} />
+            <div ref={toolsSectionRef} id="tools-section" className="scroll-mt-28">
+              <FilterPanel activeFilter={filter} onChange={setFilter} />
+            </div>
             <AccessGuard
               allowed={canUseEditingTools}
               onLocked={() => requirePaid("Unlock paid subscription to add and edit text inside the image or PDF.")}
@@ -1167,14 +1247,26 @@ function ScannerPage() {
 
 function RecoverPage() {
   const [status, setStatus] = useState("");
+  const location = useLocation();
+  const initialEmail = location.state?.email || "";
   const navigate = useNavigate();
 
   const handleRecover = async (email) => {
     try {
       const response = await api.recoverAccess(email);
-      setStoredToken(response.token);
-      setStatus(`Paid subscription is active. Your ${formatPlanName(response.access.plan)} pass is available until ${formatAccessExpiry(response.access.expiry)}. Redirecting...`);
-      setTimeout(() => navigate("/"), 900);
+      if (response.token && response.access) {
+        setStoredToken(response.token);
+        setStatus(`Payment approved. Your ${formatPlanName(response.access.plan)} pass is active until ${formatAccessExpiry(response.access.expiry)}. Redirecting...`);
+        setTimeout(() => navigate("/"), 900);
+        return;
+      }
+
+      if (response.paymentStatus) {
+        setStatus(`Payment status: ${response.paymentStatus}.`);
+        return;
+      }
+
+      setStatus("No active access found.");
     } catch (error) {
       setStatus(error.message);
     }
@@ -1182,7 +1274,7 @@ function RecoverPage() {
 
   return (
     <div className="min-h-screen px-4 py-8">
-      <RecoverAccess onRecover={handleRecover} status={status} onBack={() => navigate("/")} />
+      <RecoverAccess onRecover={handleRecover} status={status} onBack={() => navigate("/")} initialEmail={initialEmail} />
     </div>
   );
 }
