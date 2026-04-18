@@ -443,7 +443,7 @@ function HomePage() {
               Image to PDF, PDF to image, crop, sign, annotate, OCR, and A4 export with a lighter style layout.
             </p>
             <div className="mt-4 inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-100">
-              Your files are secured. No one can check them.
+              🔒 Your files never leave your device. All processing happens locally in your browser.
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -1723,7 +1723,7 @@ function ScannerPage() {
           </div>
           <div className="mx-auto mt-3 flex max-w-7xl justify-center lg:justify-start">
             <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-100">
-              Your files are secured. No one can check them.
+              🔒 Your files never leave your device. All processing happens locally in your browser.
             </div>
           </div>
         </div>
