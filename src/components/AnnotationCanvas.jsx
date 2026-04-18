@@ -233,8 +233,12 @@ export function AnnotationCanvas({ preview, filterStyle, annotations, setAnnotat
               <img
                 src={item.image}
                 alt="Signature"
-                className="max-w-[180px] rounded-md bg-black/20 p-1 shadow-lg"
-                style={{ width: `${(item.width || 0.25) * 100}%` }}
+                className="rounded-md bg-transparent shadow-lg"
+                style={{
+                  width: `${(item.width || 0.25) * 100}%`,
+                  height: `${(item.height || 0.12) * 100}%`,
+                  objectFit: "contain"
+                }}
               />
             )}
             {selected === item.id ? (

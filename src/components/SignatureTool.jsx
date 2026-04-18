@@ -118,8 +118,8 @@ export function SignatureTool({ onAdd }) {
   };
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-      <div className="text-sm font-semibold text-white">Signature tool</div>
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 text-slate-900 shadow-lg">
+      <div className="text-sm font-semibold text-slate-900">Signature tool</div>
       <div className="mt-3 space-y-3">
         <canvas
           ref={canvasRef}
@@ -130,7 +130,7 @@ export function SignatureTool({ onAdd }) {
           onPointerUp={stopDraw}
           onPointerCancel={stopDraw}
           onPointerLeave={stopDraw}
-          className="w-full rounded-2xl border border-white/10 bg-black/30"
+          className="w-full rounded-2xl border border-slate-200 bg-white"
           style={{ touchAction: "none" }}
         />
         <div className="flex flex-wrap items-center gap-2">
@@ -141,8 +141,8 @@ export function SignatureTool({ onAdd }) {
               onClick={() => setColor(item.value)}
               className={`rounded-full border px-3 py-1 text-xs font-semibold ${
                 color === item.value
-                  ? "border-white bg-white text-slate-950"
-                  : "border-white/10 bg-black/20 text-white"
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-300 bg-white text-slate-900"
               }`}
             >
               <span
@@ -164,7 +164,7 @@ export function SignatureTool({ onAdd }) {
               onAdd(createSignatureCanvasData(strokes, 320, 120, color));
               setStrokes([]);
             }}
-            className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"
+            className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
           >
             Add drawn signature
           </button>
@@ -175,7 +175,7 @@ export function SignatureTool({ onAdd }) {
               activeStrokeRef.current = [];
               setStrokes([]);
             }}
-            className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white"
+            className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
           >
             Clear signature
           </button>
@@ -184,7 +184,7 @@ export function SignatureTool({ onAdd }) {
           value={typing}
           onChange={(event) => setTyping(event.target.value)}
           placeholder="Type a signature"
-          className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400"
+          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
         />
         <button
           type="button"
@@ -204,11 +204,11 @@ export function SignatureTool({ onAdd }) {
             ctx.fillText(typing.trim(), 16, 84);
             onAdd(canvas.toDataURL("image/png"));
           }}
-          className="w-full rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"
+          className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
         >
           Add typed signature
         </button>
-        <label className="block cursor-pointer rounded-2xl border border-dashed border-white/15 bg-black/20 px-4 py-3 text-center text-sm text-slate-200">
+        <label className="block cursor-pointer rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-center text-sm text-slate-900">
           Upload signature image
           <input
             type="file"

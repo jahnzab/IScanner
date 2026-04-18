@@ -442,6 +442,9 @@ function HomePage() {
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
               Image to PDF, PDF to image, crop, sign, annotate, OCR, and A4 export with a lighter iLovePDF-style layout.
             </p>
+            <div className="mt-4 inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-100">
+              Your files are secured. No one can check them.
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -491,10 +494,10 @@ function HomePage() {
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {TOOL_CARDS.map((tool) => (
-              <button
-                key={tool.id}
-                type="button"
-                onClick={() => {
+                <button
+                  key={tool.id}
+                  type="button"
+                  onClick={() => {
                   setSelectedTool(tool);
                   window.setTimeout(() => {
                     const target = tool.id === "cropImage" ? homeCropSectionRef.current : uploadSectionRef.current;
@@ -537,8 +540,8 @@ function HomePage() {
               </div>
             </div>
 
-            <div className="mt-6">
-              <ImageUpload
+                <div className="mt-6">
+                  <ImageUpload
                 onSelectFiles={handleHomeFiles}
                 loading={false}
                 hasPages={homeFiles.length > 0}
@@ -549,7 +552,7 @@ function HomePage() {
                 multiLabelOverride={selectedTool.id === "pdfToWord" ? "Convert PDF pages" : ""}
                 showCameraOverride={selectedTool.mode === "imageToPdf"}
               />
-            </div>
+                </div>
 
             {selectedTool.id === "cropImage" ? (
               <div ref={homeCropSectionRef} id="home-crop-panel" className="mt-5 scroll-mt-24">
@@ -645,8 +648,8 @@ function HomePage() {
                       image,
                       x: 0.62,
                       y: 0.75,
-                      width: 0.34,
-                      height: 0.14
+                      width: 0.24,
+                      height: 0.1
                     }])} />
                   ) : null}
                 </div>
@@ -1233,8 +1236,8 @@ function ScannerPage() {
         image,
         x: 0.62,
         y: 0.75,
-        width: 0.34,
-        height: 0.14
+        width: 0.24,
+        height: 0.1
       }
     ]);
   };
@@ -1705,6 +1708,11 @@ function ScannerPage() {
               >
                 Check status
               </button>
+            </div>
+          </div>
+          <div className="mx-auto mt-3 flex max-w-7xl justify-center lg:justify-start">
+            <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-100">
+              Your files are secured. No one can check them.
             </div>
           </div>
         </div>
