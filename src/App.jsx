@@ -230,6 +230,73 @@ function formatPlanName(planId) {
     .trim();
 }
 
+function HomePage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-[0.35em] text-accent">Document Suite</div>
+            <h1 className="mt-3 max-w-3xl font-display text-5xl text-white sm:text-6xl">
+              All your PDF and document tools in one clean place.
+            </h1>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
+              Image to PDF, PDF to image, crop, sign, annotate, OCR, and A4 export with a lighter iLovePDF-style layout.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/recover")}
+              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Check Payment Status
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/admin")}
+              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Admin
+            </button>
+          </div>
+        </header>
+
+        <section className="mb-6 rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/8 via-white/5 to-transparent p-5 shadow-glow">
+          <div className="grid gap-5 lg:grid-cols-[1fr,0.9fr] lg:items-center">
+            <div>
+              <div className="text-xs uppercase tracking-[0.3em] text-accent">Tools</div>
+              <h2 className="mt-2 text-3xl font-semibold text-white">Choose a box to open that workflow</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                Each tool opens its own upload and editing page so the workflow stays focused.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {TOOL_CARDS.map((tool) => (
+              <button
+                key={tool.id}
+                type="button"
+                onClick={() => navigate(`/tool/${tool.id}`)}
+                className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20"
+              >
+                <div className={`inline-flex rounded-2xl bg-gradient-to-br ${tool.accent} px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white`}>
+                  {tool.cta}
+                </div>
+                <div className="mt-4 text-xl font-semibold text-white">{tool.title}</div>
+                <div className="mt-2 text-sm leading-6 text-slate-300">{tool.subtitle}</div>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function ScannerPage() {
   const { toolId } = useParams();
   const [deviceId, setDeviceId] = useState("");
@@ -372,6 +439,309 @@ function ScannerPage() {
   const showSignatureTool = EDIT_TOOL_IDS.has(selectedTool) || SIGNATURE_TOOL_IDS.has(selectedTool);
   const showOcrTools = selectedTool === "pdfToWord";
   const showFilterTools = selectedTool !== "pdfToWord";
+
+  if (toolId) {
+    return (
+      <div className="min-h-screen px-4 py-6 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="inline-flex items-center gap-3 self-start rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white"
+            >
+              <span className="text-lg leading-none">←</span>
+              Back
+            </button>
+            <div>
+              <div className="text-xs uppercase tracking-[0.35em] text-accent">Open tool</div>
+              <h1 className="mt-2 text-3xl font-semibold text-white">{activeToolCopy.title}</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{activeToolCopy.subtitle}</p>
+            </div>
+          </div>
+
+          <section
+            ref={uploadSectionRef}
+            id="upload-section"
+            className="rounded-[2rem] border border-white/10 bg-white/5 p-5 shadow-glow"
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="text-xs uppercase tracking-[0.3em] text-accent">Selected tool</div>
+                <h3 className="mt-2 text-3xl font-semibold text-white">{activeToolCopy.uploadTitle}</h3>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{activeToolCopy.uploadDescription}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                {routeTool?.title || activeToolCopy.title}
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <ImageUpload
+                onSelectFiles={handleSelectFiles}
+                loading={uploading}
+                hasPages={pages.length > 0}
+                mode={conversionMode}
+                titleOverride={activeToolCopy.uploadTitle}
+                descriptionOverride={activeToolCopy.uploadDescription}
+                primaryLabelOverride={activeToolCopy.primaryLabel}
+                multiLabelOverride={selectedTool === "pdfToWord" ? "Convert PDF pages" : ""}
+                showCameraOverride={selectedTool !== "pdfToWord"}
+              />
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!canUseEditingTools) {
+                    requirePaid("Unlock paid subscription to add and edit text inside the image or PDF.");
+                    return;
+                  }
+
+                  document.getElementById("text-tool-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white"
+              >
+                {selectedTool.includes("Image") ? "Add Text to Image" : "Add Text to PDF"}
+              </button>
+              <button
+                type="button"
+                onClick={addTimestamp}
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white"
+              >
+                Add Current Time
+              </button>
+              <button
+                type="button"
+                onClick={handleDetectEdges}
+                disabled={!preview || edgeLoading}
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {edgeLoading ? "Scanning..." : "Auto Crop"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!canUseEditingTools) {
+                    requirePaid("Unlock paid subscription to add and edit signatures inside the image or PDF.");
+                    return;
+                  }
+
+                  document.getElementById("signature-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white"
+              >
+                {selectedTool.includes("Image") ? "Add Signature to Image" : "Add Signature to PDF"}
+              </button>
+            </div>
+          </section>
+
+          <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
+            <div className="space-y-6">
+              {preview ? (
+                <div className="rounded-[2rem] border border-white/10 bg-white/5 p-4">
+                  <img
+                    ref={imageRef}
+                    src={preview}
+                    alt="Hidden detection source"
+                    className="hidden"
+                    crossOrigin="anonymous"
+                  />
+                  <div className="mb-4 rounded-3xl border border-emerald-300/20 bg-emerald-500/10 p-4">
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-white">Ready to export</div>
+                        <div className="text-xs text-emerald-100/80">
+                          Keep the original file, or crop only the pages you want.
+                        </div>
+
+                        {pages.length > 1 ? (
+                          <div className="mt-4">
+                            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
+                              Page
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                              {pages.map((page, index) => (
+                                <button
+                                  key={page.id}
+                                  type="button"
+                                  onClick={() => selectPage(index)}
+                                  className={`min-w-[10rem] rounded-2xl border px-4 py-3 text-left transition ${
+                                    selectedPageIndex === index
+                                      ? "border-accent bg-accent/20 text-white"
+                                      : "border-white/10 bg-black/20 text-slate-200 hover:bg-white/10"
+                                  }`}
+                                >
+                                  <div className="text-xs uppercase tracking-[0.18em] text-slate-300">
+                                    Page {index + 1}
+                                  </div>
+                                  <div className="mt-1 text-sm font-semibold">Page {index + 1}</div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="w-full xl:max-w-[20rem]">
+                        <div className="rounded-3xl border border-white/10 bg-black/20 p-3">
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-semibold text-white">Live preview</div>
+                              <div className="text-xs text-slate-300">Tap a page above to edit it.</div>
+                            </div>
+                            <div className="text-xs text-slate-300">
+                              {selectedPageIndex + 1}/{pages.length}
+                            </div>
+                          </div>
+                          <img
+                            src={scannedPreview || preview}
+                            alt="Selected page preview"
+                            className="max-h-[16rem] w-full rounded-[1.25rem] object-contain bg-black/30"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <CropTool
+                    preview={preview}
+                    corners={corners}
+                    onChange={updateCurrentPageCorners}
+                    onInitialize={() => {
+                      setCorners(DEFAULT_CORNERS);
+                      setPages((current) =>
+                        current.map((page, index) => (index === selectedPageIndex ? { ...page, corners: DEFAULT_CORNERS } : page))
+                      );
+                    }}
+                  />
+                  <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-white">Scanned output preview</div>
+                        <div className="text-xs text-slate-300">
+                          This shows the final page that will be downloaded, with A4 padding on PDF export.
+                        </div>
+                      </div>
+                      {renderingPreview ? <div className="text-xs text-slate-300">Refreshing preview...</div> : null}
+                    </div>
+                    {scannedPreview ? (
+                      <img
+                        src={scannedPreview}
+                        alt="Scanned output preview"
+                        className="max-h-[28rem] w-full rounded-[1.25rem] object-contain bg-black/30"
+                      />
+                    ) : (
+                      <div className="rounded-[1.25rem] border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-400">
+                        Upload a file to see the scanned output preview.
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4">
+                    <AnnotationCanvas
+                      preview={preview}
+                      filterStyle={filter.style}
+                      annotations={annotations}
+                      setAnnotations={setAnnotations}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
+                  Upload a file to start editing.
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-white">Pages in current document</div>
+                    <div className="text-xs text-slate-300">Add more files with the plus button inside upload.</div>
+                  </div>
+                  <div className="text-xs text-slate-300">{pages.length || (preview ? 1 : 0)} page(s)</div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {pages.map((page, index) => (
+                    <button
+                      key={page.id}
+                      type="button"
+                      onClick={() => selectPage(index)}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        selectedPageIndex === index ? "bg-accent text-white" : "bg-white/10 text-slate-200"
+                      }`}
+                    >
+                      Page {index + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <EdgeDetector corners={corners} onDetect={handleDetectEdges} loading={edgeLoading} />
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-white">Export</div>
+                    <div className="text-xs text-slate-300">Choose PDF or image export.</div>
+                  </div>
+                </div>
+                <div className="grid gap-3">
+                  <PDFExport onExport={handleExport} disabled={!preview} label={exportLabel} />
+                  <button
+                    type="button"
+                    onClick={downloadImage}
+                    disabled={!preview}
+                    className="min-h-[3.75rem] w-full rounded-[1.5rem] border border-white/15 bg-white/10 px-6 py-4 text-base font-semibold text-white transition hover:bg-white/15 disabled:opacity-60"
+                  >
+                    Export Scanned Image
+                  </button>
+                </div>
+              </div>
+              <div ref={toolsSectionRef} id="tools-section" className="scroll-mt-28">
+                {showFilterTools ? <FilterPanel activeFilter={filter} onChange={setFilter} /> : null}
+              </div>
+              {showTextTool ? (
+                <AccessGuard
+                  allowed={canUseEditingTools}
+                  onLocked={() => requirePaid("Unlock paid subscription to add and edit text inside the image or PDF.")}
+                  note="Paid version unlocks text editing, signature placement, combine files, and clean export."
+                >
+                  <div id="text-tool-panel">
+                    <TextTool onAdd={addAnnotationText} />
+                  </div>
+                </AccessGuard>
+              ) : null}
+              {showSignatureTool ? (
+                <AccessGuard
+                  allowed={canUseEditingTools}
+                  onLocked={() => requirePaid("Unlock paid subscription to add and edit signatures inside the image or PDF.")}
+                  note="Paid version unlocks text editing, signature placement, combine files, and clean export."
+                >
+                  <div id="signature-panel">
+                    <SignatureTool onAdd={addSignature} />
+                  </div>
+                </AccessGuard>
+              ) : null}
+              {showOcrTools ? (
+                <AccessGuard
+                  allowed={Boolean(access?.features?.ocr)}
+                  onLocked={() => requirePaid("OCR is available on paid versions.")}
+                  note="Paid version also includes text tools, signature tools, combine files, and clean export."
+                >
+                  <OCRPanel
+                    text={ocrText}
+                    loading={ocrLoading}
+                    onRun={handleRunOcr}
+                    disabled={!preview}
+                  />
+                </AccessGuard>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const exportLabel = useMemo(() => {
     if (pages.length > 1 && exportTarget === "combined") {
@@ -1492,7 +1862,7 @@ function AdminPage() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<ScannerPage />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/tool/:toolId" element={<ScannerPage />} />
       <Route path="/recover" element={<RecoverPage />} />
       <Route path="/admin" element={<AdminPage />} />
