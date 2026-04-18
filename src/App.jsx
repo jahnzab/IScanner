@@ -289,6 +289,7 @@ function HomePage() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
   const exportProfile = useMemo(() => getHomeExportProfile(selectedTool.id), [selectedTool.id]);
+  const homeNeedsSubscription = TEXT_TOOL_IDS.has(selectedTool.id) || SIGNATURE_TOOL_IDS.has(selectedTool.id);
 
   useEffect(() => {
     api.getPublicConfig().then(setConfig).catch(() => {});
@@ -385,7 +386,7 @@ function HomePage() {
       image,
       corners: homeCorners,
       filterStyle: "none",
-      watermark: false,
+      watermark: true,
       annotations: homeAnnotations
     });
   };
@@ -498,12 +499,18 @@ function HomePage() {
                   key={tool.id}
                   type="button"
                   onClick={() => {
-                  setSelectedTool(tool);
-                  window.setTimeout(() => {
-                    const target = tool.id === "cropImage" ? homeCropSectionRef.current : uploadSectionRef.current;
-                    target?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }, 30);
-                }}
+                    if (TEXT_TOOL_IDS.has(tool.id) || SIGNATURE_TOOL_IDS.has(tool.id)) {
+                      setPaywallReason("Text and signature tools require a subscription before you can edit or download them.");
+                      setPaywallOpen(true);
+                      return;
+                    }
+
+                    setSelectedTool(tool);
+                    window.setTimeout(() => {
+                      const target = tool.id === "cropImage" ? homeCropSectionRef.current : uploadSectionRef.current;
+                      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 30);
+                  }}
                   className="group relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${tool.accent} opacity-25 transition group-hover:opacity-35`} />
@@ -629,7 +636,21 @@ function HomePage() {
                   Draw or upload a signature, or place text directly on the preview before you download.
                 </div>
                 <div className="mt-4 space-y-4">
-                  {TEXT_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
+                  {homeNeedsSubscription ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaywallReason("Text and signature editing are available after subscription approval.");
+                        setPaywallOpen(true);
+                      }}
+                      className="w-full rounded-3xl border border-amber-300/25 bg-amber-400/10 p-5 text-left text-amber-50"
+                    >
+                      <div className="text-sm font-semibold">Subscription required</div>
+                      <div className="mt-1 text-xs leading-5 text-amber-50/80">
+                        Unlock text and signature editing before download. Choose a pass to continue.
+                      </div>
+                    </button>
+                  ) : TEXT_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
                     <TextTool onAdd={(value) => setHomeAnnotations((current) => [...current, {
                       id: crypto.randomUUID(),
                       type: "text",
@@ -641,7 +662,7 @@ function HomePage() {
                       fontFamily: "Sora"
                     }])} />
                   ) : null}
-                  {SIGNATURE_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
+                  {homeNeedsSubscription ? null : (SIGNATURE_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
                     <SignatureTool onAdd={(image) => setHomeAnnotations((current) => [...current, {
                       id: crypto.randomUUID(),
                       type: "signature",
@@ -651,7 +672,7 @@ function HomePage() {
                       width: 0.24,
                       height: 0.1
                     }])} />
-                  ) : null}
+                  ) : null)}
                 </div>
               </div>
               <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
@@ -660,28 +681,43 @@ function HomePage() {
                   Export the selected preview as an image or PDF after adding your changes.
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={downloadHomeImage}
-                    disabled={!homePreview}
-                    className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
-                  >
-                    {exportProfile.imageLabel}
-                  </button>
-                  {exportProfile.showPdf ? (
+                  {homeNeedsSubscription ? (
                     <button
                       type="button"
-                      onClick={downloadHomePdf}
-                      disabled={!homePreview}
-                      className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                      onClick={() => {
+                        setPaywallReason("Subscribe first to download text or signature edits.");
+                        setPaywallOpen(true);
+                      }}
+                      className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 sm:col-span-2"
                     >
-                      {exportProfile.pdfLabel}
+                      Subscribe to download
                     </button>
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-5 py-3 text-sm text-slate-300 sm:col-span-2">
-                      This tool exports as an image preview here. Document-style PDF export is available for the PDF
-                      and image-to-PDF workflows.
-                    </div>
+                    <>
+                      <button
+                        type="button"
+                        onClick={downloadHomeImage}
+                        disabled={!homePreview}
+                        className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
+                      >
+                        {exportProfile.imageLabel}
+                      </button>
+                      {exportProfile.showPdf ? (
+                        <button
+                          type="button"
+                          onClick={downloadHomePdf}
+                          disabled={!homePreview}
+                          className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                        >
+                          {exportProfile.pdfLabel}
+                        </button>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-5 py-3 text-sm text-slate-300 sm:col-span-2">
+                          This tool exports as an image preview here. Document-style PDF export is available for the PDF
+                          and image-to-PDF workflows.
+                        </div>
+                      )}
+                    </>
                   )}
                   <button
                     type="button"

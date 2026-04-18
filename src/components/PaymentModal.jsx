@@ -37,7 +37,7 @@ export function PaymentModal({ open, plan, config, onClose, onSubmit, loading, s
             <div className="text-xs uppercase tracking-[0.3em] text-accent">Manual UPI</div>
             <h2 className="mt-2 font-display text-3xl text-white">{plan.name}</h2>
             <div className="mt-2 text-sm text-slate-300">
-              Pay exactly ₹{plan.amount} using QR or a UPI app. Your UPI ID is hidden for privacy.
+              Pay exactly ₹{plan.amount} using QR or a UPI app. {plan.originalAmount ? `Regular price was ₹${plan.originalAmount}.` : ""} Your UPI ID is hidden for privacy.
             </div>
           </div>
           <button

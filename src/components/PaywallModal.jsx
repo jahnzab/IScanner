@@ -30,7 +30,19 @@ export function PaywallModal({ open, onClose, onChoosePlan, reason }) {
               }`}
             >
               <div className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-200">{plan.name}</div>
-              <div className="mt-3 text-4xl font-bold text-white">₹{plan.amount}</div>
+              {plan.id !== "free" ? (
+                <div className="mt-3 flex items-end gap-3">
+                  <div className="text-4xl font-bold text-white">₹{plan.amount}</div>
+                  {plan.originalAmount ? (
+                    <div className="pb-1 text-sm text-slate-400 line-through">₹{plan.originalAmount}</div>
+                  ) : null}
+                  <div className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-200">
+                    50% off
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 text-4xl font-bold text-white">₹{plan.amount}</div>
+              )}
               <div className="mt-2 text-sm text-slate-300">{plan.description}</div>
               <div className="mt-4 space-y-2 text-xs text-slate-200">
                 {plan.features.map((feature) => (
