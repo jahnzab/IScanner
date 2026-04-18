@@ -249,6 +249,7 @@ function HomePage() {
   const selectedCopy = useMemo(() => getToolCopy(selectedTool.id), [selectedTool.id]);
   const [homeFiles, setHomeFiles] = useState([]);
   const [homePreview, setHomePreview] = useState("");
+  const [homeAnnotations, setHomeAnnotations] = useState([]);
   const [config, setConfig] = useState({ upiId: "", upiName: "" });
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paymentPlan, setPaymentPlan] = useState(null);
@@ -268,19 +269,39 @@ function HomePage() {
 
     setHomeFiles(list);
     setPaymentStatus("");
+    setHomeAnnotations([]);
 
-    const firstImage = list.find((file) => file.type.startsWith("image/"));
-    if (firstImage) {
-      const preview = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ""));
-        reader.onerror = () => reject(new Error(`Failed to read ${firstImage.name}`));
-        reader.readAsDataURL(firstImage);
-      });
-      setHomePreview(preview);
-    } else {
-      setHomePreview("");
+    const firstFile = list[0];
+    const isPdf = firstFile.type === "application/pdf" || firstFile.name.toLowerCase().endsWith(".pdf");
+
+    if (isPdf) {
+      try {
+        const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist/build/pdf");
+        GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).toString();
+        const bytes = new Uint8Array(await firstFile.arrayBuffer());
+        const pdf = await getDocument({ data: bytes }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1.6 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: context, viewport }).promise;
+        setHomePreview(canvas.toDataURL("image/png"));
+      } catch (error) {
+        setHomePreview("");
+        setPaymentStatus(error.message);
+      }
+      return;
     }
+
+    const preview = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error(`Failed to read ${firstFile.name}`));
+      reader.readAsDataURL(firstFile);
+    });
+    setHomePreview(preview);
   };
 
   const handleChoosePlan = (plan) => {
@@ -450,11 +471,18 @@ function HomePage() {
               <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
                 <div className="text-sm font-semibold text-white">Preview</div>
                 <div className="mt-2 text-xs text-slate-300">
-                  This is the quick home preview. Open the full editor only if you need crop, annotation, OCR, or export tools.
+                  This is the quick home preview. Add text or signature below, then download directly from here.
                 </div>
                 <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-white/10 bg-black/30">
                   {homePreview ? (
-                    <img src={homePreview} alt="Selected preview" className="h-72 w-full object-contain" />
+                    <div className="max-h-[36rem] overflow-auto p-2">
+                      <AnnotationCanvas
+                        preview={homePreview}
+                        filterStyle="none"
+                        annotations={homeAnnotations}
+                        setAnnotations={setHomeAnnotations}
+                      />
+                    </div>
                   ) : (
                     <div className="grid h-72 place-items-center px-4 text-center text-sm text-slate-400">
                       Image preview appears here when you upload a photo.
@@ -464,28 +492,121 @@ function HomePage() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => navigate(`/tool/${selectedTool.id}`)}
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950"
-              >
-                Open full editor
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate("/recover")}
-                className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white"
-              >
-                Check status
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate("/admin")}
-                className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white"
-              >
-                Admin
-              </button>
+            <div className="mt-6 grid gap-4 xl:grid-cols-[0.85fr,1.15fr]">
+              <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
+                <div className="text-sm font-semibold text-white">Add text / signature</div>
+                <div className="mt-2 text-xs text-slate-300">
+                  Draw or upload a signature, or place text directly on the preview before you download.
+                </div>
+                <div className="mt-4 space-y-4">
+                  {TEXT_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
+                    <TextTool onAdd={(value) => setHomeAnnotations((current) => [...current, {
+                      id: crypto.randomUUID(),
+                      type: "text",
+                      value,
+                      x: 0.5,
+                      y: 0.5,
+                      color: "#ffffff",
+                      fontSize: 28,
+                      fontFamily: "Sora"
+                    }])} />
+                  ) : null}
+                  {SIGNATURE_TOOL_IDS.has(selectedTool.id) || EDIT_TOOL_IDS.has(selectedTool.id) ? (
+                    <SignatureTool onAdd={(image) => setHomeAnnotations((current) => [...current, {
+                      id: crypto.randomUUID(),
+                      type: "signature",
+                      image,
+                      x: 0.62,
+                      y: 0.75,
+                      width: 0.24,
+                      height: 0.1
+                    }])} />
+                  ) : null}
+                </div>
+              </div>
+              <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
+                <div className="text-sm font-semibold text-white">Download</div>
+                <div className="mt-2 text-xs text-slate-300">
+                  Export the selected preview as an image or PDF after adding your changes.
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!homePreview) return;
+                      const image = new Image();
+                      image.src = homePreview;
+                      await new Promise((resolve, reject) => {
+                        image.onload = resolve;
+                        image.onerror = reject;
+                      });
+                      const canvas = await buildCanvasFromImage({
+                        image,
+                        corners: null,
+                        filterStyle: "none",
+                        watermark: false,
+                        annotations: homeAnnotations
+                      });
+                      const link = document.createElement("a");
+                      link.href = canvas.toDataURL("image/png");
+                      link.download = "iscanner-home-preview.png";
+                      link.click();
+                    }}
+                    disabled={!homePreview}
+                    className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 disabled:opacity-60"
+                  >
+                    Download Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!homePreview) return;
+                      const image = new Image();
+                      image.src = homePreview;
+                      await new Promise((resolve, reject) => {
+                        image.onload = resolve;
+                        image.onerror = reject;
+                      });
+                      const canvas = await buildCanvasFromImage({
+                        image,
+                        corners: null,
+                        filterStyle: "none",
+                        watermark: false,
+                        annotations: homeAnnotations
+                      });
+                      const doc = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
+                      const pageWidth = doc.internal.pageSize.getWidth();
+                      const pageHeight = doc.internal.pageSize.getHeight();
+                      const margin = 24;
+                      const scale = Math.min((pageWidth - margin * 2) / canvas.width, (pageHeight - margin * 2) / canvas.height);
+                      const renderWidth = canvas.width * scale;
+                      const renderHeight = canvas.height * scale;
+                      const offsetX = (pageWidth - renderWidth) / 2;
+                      const offsetY = (pageHeight - renderHeight) / 2;
+                      doc.addImage(canvas.toDataURL("image/png"), "PNG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
+                      doc.save("iscanner-home-preview.pdf");
+                    }}
+                    disabled={!homePreview}
+                    className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                  >
+                    Download PDF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/recover")}
+                    className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white"
+                  >
+                    Check status
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/admin")}
+                    className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white"
+                  >
+                    Admin
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </section>
