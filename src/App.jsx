@@ -134,10 +134,6 @@ function getToolAnchor(toolId) {
   return "upload-section";
 }
 
-function getToolRoute(toolId) {
-  return `/tool/${toolId}#${getToolAnchor(toolId)}`;
-}
-
 function getToolCopy(toolId) {
   switch (toolId) {
     case "editPdf":
@@ -248,6 +244,7 @@ function formatPlanName(planId) {
 
 function HomePage() {
   const navigate = useNavigate();
+  const [selectedTool, setSelectedTool] = useState(TOOL_CARDS[0]);
 
   return (
     <div className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -263,6 +260,16 @@ function HomePage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                const freeSection = document.getElementById("home-upload-section");
+                freeSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-100"
+            >
+              Free plan included
+            </button>
             <button
               type="button"
               onClick={() => navigate("/recover")}
@@ -286,7 +293,8 @@ function HomePage() {
               <div className="text-xs uppercase tracking-[0.3em] text-accent">Tools</div>
               <h2 className="mt-2 text-3xl font-semibold text-white">Choose a box to open that workflow</h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                Each tool opens its own upload and editing page so the workflow stays focused.
+                Tap a tool card to jump down to its matching upload section. Use the full editor if you want
+                the complete scanner experience.
               </p>
             </div>
           </div>
@@ -296,7 +304,12 @@ function HomePage() {
               <button
                 key={tool.id}
                 type="button"
-                onClick={() => navigate(getToolRoute(tool.id))}
+                onClick={() => {
+                  setSelectedTool(tool);
+                  window.setTimeout(() => {
+                    document.getElementById("home-upload-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 30);
+                }}
                 className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20"
               >
                 <div className={`inline-flex rounded-2xl bg-gradient-to-br ${tool.accent} px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white`}>
@@ -307,6 +320,51 @@ function HomePage() {
               </button>
             ))}
           </div>
+
+          <div id="home-upload-section" className="mt-6 rounded-[2rem] border border-white/10 bg-white/6 p-6 shadow-glow scroll-mt-24">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="text-xs uppercase tracking-[0.3em] text-accent">Upload section</div>
+                <h3 className="mt-2 text-3xl font-semibold text-white">{selectedTool.uploadTitle}</h3>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{selectedTool.uploadDescription}</p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-2">Free plan: 1 scan per device</span>
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-2">Paid plans: OCR + clean export</span>
+                </div>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-black/20 px-4 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                <div className="text-slate-400">Selected tool</div>
+                <div className="mt-1 text-sm text-white">{selectedTool.title}</div>
+                <div className="mt-2 normal-case tracking-normal text-slate-400">
+                  Click below to open the full editor, or stay here for the quick jump.
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(`/tool/${selectedTool.id}`)}
+                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950"
+              >
+                Open full editor
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/recover")}
+                className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white"
+              >
+                Check status
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/admin")}
+                className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white"
+              >
+                Admin
+              </button>
+            </div>
+          </div>
         </section>
       </div>
     </div>
@@ -315,7 +373,6 @@ function HomePage() {
 
 function ScannerPage() {
   const { toolId } = useParams();
-  const location = useLocation();
   const [deviceId, setDeviceId] = useState("");
   const [config, setConfig] = useState({ upiId: "", upiName: "" });
   const [freeUsed, setFreeUsed] = useState(localStorage.getItem(STORAGE_KEYS.freeUsed) === "true");
@@ -458,7 +515,7 @@ function ScannerPage() {
     }, 50);
 
     return () => window.clearTimeout(scrollTimer);
-  }, [toolId, location.hash, navigate]);
+  }, [toolId, navigate]);
 
   const activeTool = useMemo(
     () => TOOL_CARDS.find((tool) => tool.id === selectedTool) || TOOL_CARDS[0],
@@ -1362,9 +1419,7 @@ function ScannerPage() {
               <button
                 key={tool.id}
                 type="button"
-                onClick={() => {
-                  navigate(`/tool/${tool.id}`);
-                }}
+                onClick={() => navigate(`/tool/${tool.id}`)}
                 className={`rounded-[1.6rem] border p-5 text-left transition hover:-translate-y-0.5 ${
                   selectedTool === tool.id
                     ? "border-white/20 bg-white/10 shadow-glow"
