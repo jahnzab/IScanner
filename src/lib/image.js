@@ -120,8 +120,8 @@ export async function buildCanvasFromImage({
       const sigImage = await loadImage(item.image);
       const width = (item.width || 0.25) * canvas.width;
       const height = (item.height || 0.12) * canvas.height;
-      const x = item.x * canvas.width - width / 2;
-      const y = item.y * canvas.height - height / 2;
+      const x = Math.max(0, Math.min(canvas.width - width, item.x * canvas.width - width / 2));
+      const y = Math.max(0, Math.min(canvas.height - height, item.y * canvas.height - height / 2));
       ctx.drawImage(
         sigImage,
         x,

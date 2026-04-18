@@ -275,10 +275,12 @@ function formatPlanName(planId) {
 function HomePage() {
   const navigate = useNavigate();
   const uploadSectionRef = useRef(null);
+  const homeCropSectionRef = useRef(null);
   const [selectedTool, setSelectedTool] = useState(TOOL_CARDS.find((tool) => tool.id === "imageToPdf") || TOOL_CARDS[0]);
   const selectedCopy = useMemo(() => getToolCopy(selectedTool.id), [selectedTool.id]);
   const [homeFiles, setHomeFiles] = useState([]);
   const [homePreview, setHomePreview] = useState("");
+  const [homeCorners, setHomeCorners] = useState(null);
   const [homeAnnotations, setHomeAnnotations] = useState([]);
   const [config, setConfig] = useState({ upiId: "", upiName: "" });
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -301,6 +303,7 @@ function HomePage() {
     setHomeFiles(list);
     setPaymentStatus("");
     setHomeAnnotations([]);
+    setHomeCorners(null);
 
     const firstFile = list[0];
     const isPdf = firstFile.type === "application/pdf" || firstFile.name.toLowerCase().endsWith(".pdf");
@@ -380,7 +383,7 @@ function HomePage() {
 
     return buildCanvasFromImage({
       image,
-      corners: null,
+      corners: homeCorners,
       filterStyle: "none",
       watermark: false,
       annotations: homeAnnotations
@@ -416,6 +419,15 @@ function HomePage() {
     const offsetY = (pageHeight - renderHeight) / 2;
     doc.addImage(canvas.toDataURL("image/png"), "PNG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
     doc.save(`${selectedTool.id || "iscanner"}-preview.pdf`);
+  };
+
+  const applyHomeAutoCrop = () => {
+    setHomeCorners([
+      { x: 0.06, y: 0.04 },
+      { x: 0.94, y: 0.04 },
+      { x: 0.94, y: 0.96 },
+      { x: 0.06, y: 0.96 }
+    ]);
   };
 
   return (
@@ -479,13 +491,14 @@ function HomePage() {
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {TOOL_CARDS.map((tool) => (
-                <button
-                  key={tool.id}
-                  type="button"
-                  onClick={() => {
+              <button
+                key={tool.id}
+                type="button"
+                onClick={() => {
                   setSelectedTool(tool);
                   window.setTimeout(() => {
-                    uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    const target = tool.id === "cropImage" ? homeCropSectionRef.current : uploadSectionRef.current;
+                    target?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }, 30);
                 }}
                   className="group relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20"
@@ -538,6 +551,49 @@ function HomePage() {
               />
             </div>
 
+            {selectedTool.id === "cropImage" ? (
+              <div ref={homeCropSectionRef} id="home-crop-panel" className="mt-5 scroll-mt-24">
+                <CropTool
+                  preview={homePreview}
+                  corners={homeCorners}
+                  onChange={setHomeCorners}
+                  onInitialize={() => {
+                    setHomeCorners([
+                      { x: 0.06, y: 0.04 },
+                      { x: 0.94, y: 0.04 },
+                      { x: 0.94, y: 0.96 },
+                      { x: 0.06, y: 0.96 }
+                    ]);
+                  }}
+                />
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={applyHomeAutoCrop}
+                    className="rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-white"
+                  >
+                    Auto crop
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (homePreview) {
+                        setHomeCorners([
+                          { x: 0.06, y: 0.04 },
+                          { x: 0.94, y: 0.04 },
+                          { x: 0.94, y: 0.96 },
+                          { x: 0.06, y: 0.96 }
+                        ]);
+                      }
+                    }}
+                    className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white"
+                  >
+                    Show edges
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             <div className="mt-5">
               <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
                 <div className="text-sm font-semibold text-white">Preview</div>
@@ -578,7 +634,7 @@ function HomePage() {
                       x: 0.5,
                       y: 0.5,
                       color: "#ffffff",
-                      fontSize: 28,
+                      fontSize: 42,
                       fontFamily: "Sora"
                     }])} />
                   ) : null}
@@ -589,8 +645,8 @@ function HomePage() {
                       image,
                       x: 0.62,
                       y: 0.75,
-                      width: 0.24,
-                      height: 0.1
+                      width: 0.34,
+                      height: 0.14
                     }])} />
                   ) : null}
                 </div>
@@ -1162,7 +1218,7 @@ function ScannerPage() {
         x: 0.5,
         y: 0.5,
         color: "#ffffff",
-        fontSize: 28,
+        fontSize: 42,
         fontFamily: "Sora"
       }
     ]);
@@ -1177,8 +1233,8 @@ function ScannerPage() {
         image,
         x: 0.62,
         y: 0.75,
-        width: 0.24,
-        height: 0.1
+        width: 0.34,
+        height: 0.14
       }
     ]);
   };
