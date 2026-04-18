@@ -280,7 +280,7 @@ function HomePage() {
               <button
                 key={tool.id}
                 type="button"
-                onClick={() => navigate(`/tool/${tool.id}`)}
+                onClick={() => navigate(`/tool/${tool.id}#upload-section`)}
                 className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20"
               >
                 <div className={`inline-flex rounded-2xl bg-gradient-to-br ${tool.accent} px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white`}>
@@ -428,6 +428,12 @@ function ScannerPage() {
     setSelectedTool(nextTool.id);
     setConversionMode(nextTool.mode);
     setMessage("");
+
+    const scrollTimer = window.setTimeout(() => {
+      uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+
+    return () => window.clearTimeout(scrollTimer);
   }, [toolId, navigate]);
 
   const activeTool = useMemo(
@@ -463,20 +469,24 @@ function ScannerPage() {
           <section
             ref={uploadSectionRef}
             id="upload-section"
-            className="rounded-[2rem] border border-white/10 bg-white/5 p-5 shadow-glow"
+            className="rounded-[2.4rem] border border-white/15 bg-gradient-to-br from-white/10 via-white/6 to-transparent p-6 shadow-glow scroll-mt-28"
           >
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div className="text-xs uppercase tracking-[0.3em] text-accent">Selected tool</div>
                 <h3 className="mt-2 text-3xl font-semibold text-white">{activeToolCopy.uploadTitle}</h3>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{activeToolCopy.uploadDescription}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
-                {routeTool?.title || activeToolCopy.title}
+              <div className="flex flex-col gap-2 rounded-3xl border border-white/10 bg-black/20 px-4 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                <span className="text-slate-400">Selected workflow</span>
+                <span className="text-sm text-white">{routeTool?.title || activeToolCopy.title}</span>
+                <span className="text-[11px] normal-case tracking-normal text-slate-400">
+                  Upload here, then continue with crop, text, signature, OCR, or export tools below.
+                </span>
               </div>
             </div>
 
-            <div className="mt-5">
+            <div className="mt-6">
               <ImageUpload
                 onSelectFiles={handleSelectFiles}
                 loading={uploading}
@@ -490,7 +500,7 @@ function ScannerPage() {
               />
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <button
                 type="button"
                 onClick={() => {
