@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import { AccessGuard } from "./components/AccessGuard";
 import { AdminPanel } from "./components/AdminPanel";
@@ -122,6 +122,92 @@ const EDIT_TOOL_IDS = new Set(["editPdf", "editImage"]);
 const TEXT_TOOL_IDS = new Set(["textPdf", "textImage"]);
 const SIGNATURE_TOOL_IDS = new Set(["signaturePdf", "signatureImage"]);
 
+function getToolCopy(toolId) {
+  switch (toolId) {
+    case "editPdf":
+      return {
+        title: "Edit PDF",
+        subtitle: "Add text, signatures, and page cleanup inside PDF files.",
+        uploadTitle: "Edit PDF",
+        uploadDescription: "Upload a PDF, then place text or signatures on the selected page.",
+        primaryLabel: "Open PDF"
+      };
+    case "editImage":
+      return {
+        title: "Edit Image",
+        subtitle: "Mark up images with text, signatures, and crop control.",
+        uploadTitle: "Edit Image",
+        uploadDescription: "Upload an image, then crop, annotate, and export it.",
+        primaryLabel: "Open image"
+      };
+    case "textPdf":
+      return {
+        title: "Add Text PDF",
+        subtitle: "Place labels, notes, or timestamps on a PDF page.",
+        uploadTitle: "Add Text to PDF",
+        uploadDescription: "Upload a PDF and place notes, dates, or labels on the selected page.",
+        primaryLabel: "Open PDF"
+      };
+    case "signaturePdf":
+      return {
+        title: "Add Signature PDF",
+        subtitle: "Draw or upload a signature and place it on a PDF.",
+        uploadTitle: "Add Signature to PDF",
+        uploadDescription: "Upload a PDF and place your signature on the selected page.",
+        primaryLabel: "Open PDF"
+      };
+    case "textImage":
+      return {
+        title: "Add Text Image",
+        subtitle: "Place text on an image before exporting or saving.",
+        uploadTitle: "Add Text to Image",
+        uploadDescription: "Upload an image and place text on top of it.",
+        primaryLabel: "Open image"
+      };
+    case "signatureImage":
+      return {
+        title: "Add Signature Image",
+        subtitle: "Draw or upload a signature and place it on an image.",
+        uploadTitle: "Add Signature to Image",
+        uploadDescription: "Upload an image and place your signature on top of it.",
+        primaryLabel: "Open image"
+      };
+    case "pdfToImage":
+      return {
+        title: "PDF to Image",
+        subtitle: "Export PDF pages as image files with the same layout.",
+        uploadTitle: "Convert PDF to Image",
+        uploadDescription: "Upload a PDF and convert each page into images.",
+        primaryLabel: "Open PDF"
+      };
+    case "combinePdf":
+      return {
+        title: "Combine PDFs",
+        subtitle: "Merge multiple PDFs into one document.",
+        uploadTitle: "Combine PDFs",
+        uploadDescription: "Upload multiple PDFs and merge them into one document.",
+        primaryLabel: "Open PDFs"
+      };
+    case "pdfToWord":
+      return {
+        title: "PDF to Word",
+        subtitle: "Extract text from PDFs with OCR for copy and editing.",
+        uploadTitle: "Convert PDF to Word",
+        uploadDescription: "Upload a PDF and extract editable text with OCR.",
+        primaryLabel: "Open PDF"
+      };
+    case "imageToPdf":
+    default:
+      return {
+        title: "Image to PDF",
+        subtitle: "Turn photos and screenshots into a clean PDF.",
+        uploadTitle: "Convert Image to PDF",
+        uploadDescription: "Upload an image and convert it into a clean PDF.",
+        primaryLabel: "Open image"
+      };
+  }
+}
+
 function createPageEntry(src) {
   return {
     id: crypto.randomUUID(),
@@ -145,6 +231,7 @@ function formatPlanName(planId) {
 }
 
 function ScannerPage() {
+  const { toolId } = useParams();
   const [deviceId, setDeviceId] = useState("");
   const [config, setConfig] = useState({ upiId: "", upiName: "" });
   const [freeUsed, setFreeUsed] = useState(localStorage.getItem(STORAGE_KEYS.freeUsed) === "true");
@@ -180,6 +267,7 @@ function ScannerPage() {
   const scrollTo = (ref) => {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+  const routeTool = TOOL_CARDS.find((tool) => tool.id === toolId);
   const selectPage = (index) => {
     const page = pages[index];
     if (!page) {
@@ -259,10 +347,27 @@ function ScannerPage() {
     }
   }, [access]);
 
+  useEffect(() => {
+    if (!toolId) {
+      return;
+    }
+
+    const nextTool = TOOL_CARDS.find((tool) => tool.id === toolId);
+    if (!nextTool) {
+      navigate("/");
+      return;
+    }
+
+    setSelectedTool(nextTool.id);
+    setConversionMode(nextTool.mode);
+    setMessage("");
+  }, [toolId, navigate]);
+
   const activeTool = useMemo(
     () => TOOL_CARDS.find((tool) => tool.id === selectedTool) || TOOL_CARDS[0],
     [selectedTool]
   );
+  const activeToolCopy = useMemo(() => getToolCopy(selectedTool), [selectedTool]);
   const showTextTool = EDIT_TOOL_IDS.has(selectedTool) || TEXT_TOOL_IDS.has(selectedTool);
   const showSignatureTool = EDIT_TOOL_IDS.has(selectedTool) || SIGNATURE_TOOL_IDS.has(selectedTool);
   const showOcrTools = selectedTool === "pdfToWord";
@@ -854,10 +959,7 @@ function ScannerPage() {
                 key={tool.id}
                 type="button"
                 onClick={() => {
-                  setSelectedTool(tool.id);
-                  setConversionMode(tool.mode);
-                  setMessage("");
-                  scrollTo(uploadSectionRef);
+                  navigate(`/tool/${tool.id}`);
                 }}
                 className={`rounded-[1.6rem] border p-5 text-left transition hover:-translate-y-0.5 ${
                   selectedTool === tool.id
@@ -886,9 +988,7 @@ function ScannerPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedTool("pdfToWord");
-                  setConversionMode("pdfToPdf");
-                  scrollTo(uploadSectionRef);
+                  navigate("/tool/pdfToWord");
                 }}
                 className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white"
               >
@@ -918,7 +1018,7 @@ function ScannerPage() {
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{activeTool.subtitle}</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
-                  {selectedTool.replace(/([A-Z])/g, " $1").trim()}
+                  {routeTool?.title || activeTool.title}
                 </div>
               </div>
 
@@ -928,6 +1028,11 @@ function ScannerPage() {
                   loading={uploading}
                   hasPages={pages.length > 0}
                   mode={conversionMode}
+                  titleOverride={activeToolCopy.uploadTitle}
+                  descriptionOverride={activeToolCopy.uploadDescription}
+                  primaryLabelOverride={activeToolCopy.primaryLabel}
+                  multiLabelOverride={selectedTool === "pdfToWord" ? "Convert PDF pages" : ""}
+                  showCameraOverride={selectedTool !== "pdfToWord"}
                 />
               </div>
 

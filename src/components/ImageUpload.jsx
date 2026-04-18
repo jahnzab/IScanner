@@ -24,11 +24,28 @@ const MODE_CONFIG = {
   }
 };
 
-export function ImageUpload({ onSelectFiles, loading, hasPages = false, mode = "imageToPdf" }) {
+export function ImageUpload({
+  onSelectFiles,
+  loading,
+  hasPages = false,
+  mode = "imageToPdf",
+  titleOverride = "",
+  descriptionOverride = "",
+  primaryLabelOverride = "",
+  multiLabelOverride = "",
+  showCameraOverride
+}) {
   const fileRef = useRef(null);
   const multiFileRef = useRef(null);
   const cameraRef = useRef(null);
   const config = MODE_CONFIG[mode] || MODE_CONFIG.imageToPdf;
+  const title = titleOverride || (hasPages ? `Add another ${config.title.toLowerCase().replace("upload ", "")}` : config.title);
+  const description = descriptionOverride || config.description;
+  const primaryLabel =
+    primaryLabelOverride ||
+    (loading ? "Preparing..." : hasPages ? `Add ${mode === "imageToPdf" ? "image" : "PDF"}` : `Select ${mode === "imageToPdf" ? "image file" : "PDF file"}`);
+  const multiLabel = multiLabelOverride || config.multiTitle;
+  const showCamera = typeof showCameraOverride === "boolean" ? showCameraOverride : config.allowCamera;
 
   const handleFiles = (files) => {
     const list = Array.from(files || []);
@@ -59,10 +76,8 @@ export function ImageUpload({ onSelectFiles, loading, hasPages = false, mode = "
         className="grid min-h-64 place-items-center rounded-[1.5rem] border border-dashed border-white/15 bg-grid grid-bg bg-[length:38px_38px] p-8 text-center"
       >
         <div className="max-w-md">
-          <div className="text-lg font-semibold text-white">
-            {hasPages ? `Add another ${config.title.toLowerCase().replace("upload ", "")}` : config.title}
-          </div>
-          <div className="mt-2 text-sm leading-6 text-slate-300">{config.description}</div>
+          <div className="text-lg font-semibold text-white">{title}</div>
+          <div className="mt-2 text-sm leading-6 text-slate-300">{description}</div>
           <div className="mt-3 text-xs text-slate-400">No automatic crop is applied until you choose Scan or Crop.</div>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <button
@@ -71,17 +86,28 @@ export function ImageUpload({ onSelectFiles, loading, hasPages = false, mode = "
               disabled={loading}
               className="rounded-[1.6rem] bg-[#ef4444] px-8 py-4 text-base font-semibold text-white shadow-lg shadow-red-500/20 transition hover:-translate-y-0.5 hover:bg-[#dc2626]"
             >
-              {loading ? "Preparing..." : hasPages ? `Add ${mode === "imageToPdf" ? "image" : "PDF"}` : `Select ${mode === "imageToPdf" ? "image file" : "PDF file"}`}
+              {primaryLabel}
             </button>
+            {hasPages ? (
+              <button
+                type="button"
+                onClick={() => multiFileRef.current?.click()}
+                disabled={loading}
+                className="flex h-[4.1rem] w-[4.1rem] items-center justify-center rounded-full border border-white/15 bg-white/10 text-2xl font-black text-white"
+                aria-label="Add more files"
+              >
+                +
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => multiFileRef.current?.click()}
               disabled={loading}
               className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white"
             >
-              {config.multiTitle}
+              {multiLabel}
             </button>
-            {config.allowCamera ? (
+            {showCamera ? (
               <button
                 type="button"
                 onClick={() => cameraRef.current?.click()}
