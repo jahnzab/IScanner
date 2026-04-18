@@ -122,6 +122,22 @@ const EDIT_TOOL_IDS = new Set(["editPdf", "editImage"]);
 const TEXT_TOOL_IDS = new Set(["textPdf", "textImage"]);
 const SIGNATURE_TOOL_IDS = new Set(["signaturePdf", "signatureImage"]);
 
+function getToolAnchor(toolId) {
+  if (TEXT_TOOL_IDS.has(toolId)) {
+    return "text-tool-panel";
+  }
+
+  if (SIGNATURE_TOOL_IDS.has(toolId)) {
+    return "signature-panel";
+  }
+
+  return "upload-section";
+}
+
+function getToolRoute(toolId) {
+  return `/tool/${toolId}#${getToolAnchor(toolId)}`;
+}
+
 function getToolCopy(toolId) {
   switch (toolId) {
     case "editPdf":
@@ -280,7 +296,7 @@ function HomePage() {
               <button
                 key={tool.id}
                 type="button"
-                onClick={() => navigate(`/tool/${tool.id}#upload-section`)}
+                onClick={() => navigate(getToolRoute(tool.id))}
                 className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20"
               >
                 <div className={`inline-flex rounded-2xl bg-gradient-to-br ${tool.accent} px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white`}>
@@ -299,6 +315,7 @@ function HomePage() {
 
 function ScannerPage() {
   const { toolId } = useParams();
+  const location = useLocation();
   const [deviceId, setDeviceId] = useState("");
   const [config, setConfig] = useState({ upiId: "", upiName: "" });
   const [freeUsed, setFreeUsed] = useState(localStorage.getItem(STORAGE_KEYS.freeUsed) === "true");
@@ -429,12 +446,19 @@ function ScannerPage() {
     setConversionMode(nextTool.mode);
     setMessage("");
 
+    const anchorId = getToolAnchor(nextTool.id);
     const scrollTimer = window.setTimeout(() => {
       uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      if (anchorId !== "upload-section") {
+        window.setTimeout(() => {
+          document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 250);
+      }
     }, 50);
 
     return () => window.clearTimeout(scrollTimer);
-  }, [toolId, navigate]);
+  }, [toolId, location.hash, navigate]);
 
   const activeTool = useMemo(
     () => TOOL_CARDS.find((tool) => tool.id === selectedTool) || TOOL_CARDS[0],
