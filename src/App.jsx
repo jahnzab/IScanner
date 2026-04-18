@@ -35,24 +35,92 @@ const CONVERSION_MODES = [
   { id: "pdfToImage", label: "PDF to Images" }
 ];
 
-const TOOL_HIGHLIGHTS = [
+const TOOL_CARDS = [
   {
-    title: "Original first",
-    text: "Uploads stay uncropped until you choose to scan or crop them."
+    id: "editPdf",
+    title: "Edit PDF",
+    subtitle: "Add text, signatures, and page cleanup inside PDF files.",
+    mode: "pdfToPdf",
+    accent: "from-red-500/20 to-orange-400/10",
+    cta: "Open PDF editor"
   },
   {
-    title: "A4 export",
-    text: "PDF output uses A4 pages with breathing room around each result."
+    id: "editImage",
+    title: "Edit Image",
+    subtitle: "Mark up images with text, signatures, and crop control.",
+    mode: "imageToPdf",
+    accent: "from-amber-500/20 to-rose-400/10",
+    cta: "Open image editor"
   },
   {
-    title: "Selected page tools",
-    text: "Text and signature changes apply only to the page you are editing."
+    id: "textPdf",
+    title: "Add Text PDF",
+    subtitle: "Place labels, notes, or timestamps on a PDF page.",
+    mode: "pdfToPdf",
+    accent: "from-violet-500/20 to-fuchsia-400/10",
+    cta: "Text on PDF"
   },
   {
-    title: "Manual approval",
-    text: "Payment stays pending until the admin approves the UTR."
+    id: "signaturePdf",
+    title: "Add Signature PDF",
+    subtitle: "Draw or upload a signature and place it on a PDF.",
+    mode: "pdfToPdf",
+    accent: "from-emerald-500/20 to-teal-400/10",
+    cta: "Sign PDF"
+  },
+  {
+    id: "textImage",
+    title: "Add Text Image",
+    subtitle: "Place text on an image before exporting or saving.",
+    mode: "imageToPdf",
+    accent: "from-pink-500/20 to-rose-400/10",
+    cta: "Text on image"
+  },
+  {
+    id: "signatureImage",
+    title: "Add Signature Image",
+    subtitle: "Draw or upload a signature and place it on an image.",
+    mode: "imageToPdf",
+    accent: "from-cyan-500/20 to-sky-400/10",
+    cta: "Sign image"
+  },
+  {
+    id: "imageToPdf",
+    title: "Image to PDF",
+    subtitle: "Turn photos and screenshots into a clean PDF.",
+    mode: "imageToPdf",
+    accent: "from-rose-500/20 to-orange-400/10",
+    cta: "Convert image"
+  },
+  {
+    id: "pdfToImage",
+    title: "PDF to Image",
+    subtitle: "Export PDF pages as image files with the same layout.",
+    mode: "pdfToImage",
+    accent: "from-sky-500/20 to-cyan-400/10",
+    cta: "Export images"
+  },
+  {
+    id: "combinePdf",
+    title: "Combine PDFs",
+    subtitle: "Merge multiple PDFs into one document.",
+    mode: "pdfToPdf",
+    accent: "from-emerald-500/20 to-teal-400/10",
+    cta: "Merge PDFs"
+  },
+  {
+    id: "pdfToWord",
+    title: "PDF to Word",
+    subtitle: "Extract text from PDFs with OCR for copy and editing.",
+    mode: "pdfToPdf",
+    accent: "from-violet-500/20 to-fuchsia-400/10",
+    cta: "Extract text"
   }
 ];
+
+const EDIT_TOOL_IDS = new Set(["editPdf", "editImage"]);
+const TEXT_TOOL_IDS = new Set(["textPdf", "textImage"]);
+const SIGNATURE_TOOL_IDS = new Set(["signaturePdf", "signatureImage"]);
 
 function createPageEntry(src) {
   return {
@@ -103,6 +171,7 @@ function ScannerPage() {
   const [exportTarget, setExportTarget] = useState("current");
   const [exportLayout, setExportLayout] = useState("vertical");
   const [conversionMode, setConversionMode] = useState("imageToPdf");
+  const [selectedTool, setSelectedTool] = useState("editPdf");
   const imageRef = useRef(null);
   const uploadSectionRef = useRef(null);
   const toolsSectionRef = useRef(null);
@@ -189,6 +258,15 @@ function ScannerPage() {
       setPaywallOpen(false);
     }
   }, [access]);
+
+  const activeTool = useMemo(
+    () => TOOL_CARDS.find((tool) => tool.id === selectedTool) || TOOL_CARDS[0],
+    [selectedTool]
+  );
+  const showTextTool = EDIT_TOOL_IDS.has(selectedTool) || TEXT_TOOL_IDS.has(selectedTool);
+  const showSignatureTool = EDIT_TOOL_IDS.has(selectedTool) || SIGNATURE_TOOL_IDS.has(selectedTool);
+  const showOcrTools = selectedTool === "pdfToWord";
+  const showFilterTools = selectedTool !== "pdfToWord";
 
   const exportLabel = useMemo(() => {
     if (pages.length > 1 && exportTarget === "combined") {
@@ -750,64 +828,72 @@ function ScannerPage() {
           </div>
         </header>
 
-        <section className="mb-6 rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/8 via-white/5 to-transparent p-5 shadow-glow">
-          <div className="grid gap-5 lg:grid-cols-[1.05fr,0.95fr] lg:items-center">
+        <section ref={toolsSectionRef} className="mb-6 rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/8 via-white/5 to-transparent p-5 shadow-glow scroll-mt-28">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-accent">Featured</div>
-              <h2 className="mt-2 text-3xl font-semibold text-white">Pick a tool, then drop into the right section</h2>
+              <div className="text-xs uppercase tracking-[0.3em] text-accent">Tools</div>
+              <h2 className="mt-2 text-3xl font-semibold text-white">Choose a box to open that workflow</h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                Buttons now jump straight to upload, conversion, or payment status so the workflow feels fast on both desktop and mobile.
+                Each tool opens its own upload and editing area so the page stays focused on one job at a time.
               </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => scrollTo(uploadSectionRef)}
-                  className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950"
-                >
-                  Select PDF file
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/recover")}
-                  className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white"
-                >
-                  Check payment status
-                </button>
-              </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {TOOL_HIGHLIGHTS.map((item) => (
-                <div key={item.title} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="text-sm font-semibold text-white">{item.title}</div>
-                  <div className="mt-2 text-xs leading-6 text-slate-300">{item.text}</div>
-                </div>
-              ))}
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => navigate("/recover")}
+                className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white"
+              >
+                Check payment status
+              </button>
             </div>
           </div>
-        </section>
 
-        <section className="mb-6 rounded-[2rem] border border-white/10 bg-white/5 p-5">
-          <div className="grid gap-5 lg:grid-cols-[1fr,1.1fr] lg:items-center">
-            <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-accent">Upload</div>
-              <h2 className="mt-2 text-2xl font-semibold text-white">Start here</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                Select a file first, then move into crop, signature, OCR, and export.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                "Image to PDF",
-                "PDF to Image",
-                "Combine PDFs",
-                "Add Signature",
-                "Add Text",
-                "OCR"
-              ].map((label) => (
-                <div key={label} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white">
-                  {label}
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {TOOL_CARDS.map((tool) => (
+              <button
+                key={tool.id}
+                type="button"
+                onClick={() => {
+                  setSelectedTool(tool.id);
+                  setConversionMode(tool.mode);
+                  setMessage("");
+                  scrollTo(uploadSectionRef);
+                }}
+                className={`rounded-[1.6rem] border p-5 text-left transition hover:-translate-y-0.5 ${
+                  selectedTool === tool.id
+                    ? "border-white/20 bg-white/10 shadow-glow"
+                    : "border-white/10 bg-black/20 hover:border-white/20"
+                }`}
+              >
+                <div className={`inline-flex rounded-2xl bg-gradient-to-br ${tool.accent} px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white`}>
+                  {tool.cta}
                 </div>
-              ))}
+                <div className="mt-4 text-xl font-semibold text-white">{tool.title}</div>
+                <div className="mt-2 text-sm leading-6 text-slate-300">{tool.subtitle}</div>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-5 rounded-[1.4rem] border border-white/10 bg-black/20 p-4">
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => navigate("/recover")}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white"
+              >
+                Payment status
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTool("pdfToWord");
+                  setConversionMode("pdfToPdf");
+                  scrollTo(uploadSectionRef);
+                }}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white"
+              >
+                PDF to Word
+              </button>
             </div>
           </div>
         </section>
@@ -818,77 +904,79 @@ function ScannerPage() {
           </div>
         ) : null}
 
-        <section className="mb-6 rounded-[2rem] border border-white/10 bg-white/5 p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-accent">Quick Actions</div>
-              <h2 className="mt-2 text-2xl font-semibold text-white">Edit and download from one place</h2>
-              <p className="mt-2 text-sm text-slate-300">
-                Upload an image or PDF, then choose whether to keep it original, crop it manually, add text, place a signature, or stamp current time.
-              </p>
-              {!features.cleanExport ? (
-                <p className="mt-2 text-xs text-amber-200">
-                  Unlock the paid version for text editing, signature placement, combining files, and clean export without watermark.
-                </p>
-              ) : null}
-              {access ? (
-                <div className="mt-3 inline-flex items-center rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">
-                  Unlocked Paid Version
-                </div>
-              ) : null}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!canUseEditingTools) {
-                    requirePaid("Unlock paid subscription to add and edit text inside the image or PDF.");
-                    return;
-                  }
-
-                  document.getElementById("text-tool-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"
-              >
-                Add Text
-              </button>
-              <button type="button" onClick={addTimestamp} className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white">
-                Add Current Time
-              </button>
-              <button type="button" onClick={handleDetectEdges} disabled={!preview || edgeLoading} className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
-                {edgeLoading ? "Scanning..." : "Auto Crop"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!canUseEditingTools) {
-                    requirePaid("Unlock paid subscription to add and edit signatures inside the image or PDF.");
-                    return;
-                  }
-
-                  document.getElementById("signature-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"
-              >
-                Add Signature
-              </button>
-              <div className="sm:col-span-2 lg:col-span-1">
-                <PDFExport onExport={handleExport} disabled={!preview} label={exportLabel} />
-              </div>
-            </div>
-          </div>
-        </section>
-
         <div className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
           <div className="space-y-6">
-            <div ref={uploadSectionRef} id="upload-section">
-              <ImageUpload
-                onSelectFiles={handleSelectFiles}
-                loading={uploading}
-                hasPages={pages.length > 0}
-                mode={conversionMode}
-              />
-            </div>
+            <section
+              ref={uploadSectionRef}
+              id="upload-section"
+              className="rounded-[2rem] border border-white/10 bg-white/5 p-5 shadow-glow"
+            >
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.3em] text-accent">Selected tool</div>
+                  <h3 className="mt-2 text-3xl font-semibold text-white">{activeTool.title}</h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{activeTool.subtitle}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
+                  {selectedTool.replace(/([A-Z])/g, " $1").trim()}
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <ImageUpload
+                  onSelectFiles={handleSelectFiles}
+                  loading={uploading}
+                  hasPages={pages.length > 0}
+                  mode={conversionMode}
+                />
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!canUseEditingTools) {
+                      requirePaid("Unlock paid subscription to add and edit text inside the image or PDF.");
+                      return;
+                    }
+
+                    document.getElementById("text-tool-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  {selectedTool.includes("Image") ? "Add Text to Image" : "Add Text to PDF"}
+                </button>
+                <button
+                  type="button"
+                  onClick={addTimestamp}
+                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  Add Current Time
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDetectEdges}
+                  disabled={!preview || edgeLoading}
+                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {edgeLoading ? "Scanning..." : "Auto Crop"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!canUseEditingTools) {
+                      requirePaid("Unlock paid subscription to add and edit signatures inside the image or PDF.");
+                      return;
+                    }
+
+                    document.getElementById("signature-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  {selectedTool.includes("Image") ? "Add Signature to Image" : "Add Signature to PDF"}
+                </button>
+              </div>
+            </section>
             {preview ? (
               <div className="rounded-[2rem] border border-white/10 bg-white/5 p-4">
                 <img
@@ -1160,39 +1248,46 @@ function ScannerPage() {
             ) : null}
 
             <div ref={toolsSectionRef} id="tools-section" className="scroll-mt-28">
-              <FilterPanel activeFilter={filter} onChange={setFilter} />
+              {showFilterTools ? <FilterPanel activeFilter={filter} onChange={setFilter} /> : null}
             </div>
-            <AccessGuard
-              allowed={canUseEditingTools}
-              onLocked={() => requirePaid("Unlock paid subscription to add and edit text inside the image or PDF.")}
-              note="Paid version unlocks text editing, signature placement, combine files, and clean export."
-            >
-              <div id="text-tool-panel">
-                <TextTool onAdd={addAnnotationText} />
-              </div>
-            </AccessGuard>
-            <AccessGuard
-              allowed={canUseEditingTools}
-              onLocked={() => requirePaid("Unlock paid subscription to add and edit signatures inside the image or PDF.")}
-              note="Paid version unlocks text editing, signature placement, combine files, and clean export."
-            >
-              <div id="signature-panel">
-                <SignatureTool onAdd={addSignature} />
-              </div>
-            </AccessGuard>
+            {showTextTool ? (
+              <AccessGuard
+                allowed={canUseEditingTools}
+                onLocked={() => requirePaid("Unlock paid subscription to add and edit text inside the image or PDF.")}
+                note="Paid version unlocks text editing, signature placement, combine files, and clean export."
+              >
+                <div id="text-tool-panel">
+                  <TextTool onAdd={addAnnotationText} />
+                </div>
+              </AccessGuard>
+            ) : null}
 
-            <AccessGuard
-              allowed={Boolean(access?.features?.ocr)}
-              onLocked={() => requirePaid("OCR is available on paid versions.")}
-              note="Paid version also includes text tools, signature tools, combine files, and clean export."
-            >
-              <OCRPanel
-                text={ocrText}
-                loading={ocrLoading}
-                onRun={handleRunOcr}
-                disabled={!preview}
-              />
-            </AccessGuard>
+            {showSignatureTool ? (
+              <AccessGuard
+                allowed={canUseEditingTools}
+                onLocked={() => requirePaid("Unlock paid subscription to add and edit signatures inside the image or PDF.")}
+                note="Paid version unlocks text editing, signature placement, combine files, and clean export."
+              >
+                <div id="signature-panel">
+                  <SignatureTool onAdd={addSignature} />
+                </div>
+              </AccessGuard>
+            ) : null}
+
+            {showOcrTools ? (
+              <AccessGuard
+                allowed={Boolean(access?.features?.ocr)}
+                onLocked={() => requirePaid("OCR is available on paid versions.")}
+                note="Paid version also includes text tools, signature tools, combine files, and clean export."
+              >
+                <OCRPanel
+                  text={ocrText}
+                  loading={ocrLoading}
+                  onRun={handleRunOcr}
+                  disabled={!preview}
+                />
+              </AccessGuard>
+            ) : null}
             {pages.length > 0 ? (
               <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
                 <div className="text-sm font-semibold text-white">Manage current page</div>
