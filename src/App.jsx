@@ -1390,6 +1390,7 @@ function ScannerPage() {
   };
 
   const canUseEditingTools = Boolean(access?.features?.cleanExport);
+  const editWorkflowLocked = !canUseEditingTools && (TEXT_TOOL_IDS.has(selectedTool) || SIGNATURE_TOOL_IDS.has(selectedTool) || EDIT_TOOL_IDS.has(selectedTool));
 
   const handleRunOcr = async () => {
     if (!preview) {
@@ -1466,6 +1467,11 @@ function ScannerPage() {
       return;
     }
 
+    if (editWorkflowLocked) {
+      requirePaid("Subscribe to download text or signature edits.");
+      return;
+    }
+
     try {
       const sourcePages =
         exportTarget === "combined" && pages.length > 1
@@ -1519,6 +1525,11 @@ function ScannerPage() {
 
   const handleExport = async () => {
     if (!preview) {
+      return;
+    }
+
+    if (editWorkflowLocked) {
+      requirePaid("Subscribe to export text or signature edits.");
       return;
     }
 
